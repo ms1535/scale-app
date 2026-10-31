@@ -8,17 +8,18 @@
 <meta name="theme-color" content="#1f5fbf">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Build 2026-10-31.3 -->
+<!-- Build 2026-10-31.4 -->
 <style>
-:root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a}
-@media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c}}
+:root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a;--avg:#c76b00}
+@media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c;--avg:#ffb054}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,sans-serif}
 main{max-width:640px;margin:0 auto;padding:12px 16px 80px}
 h1{font-size:20px;margin:8px 0 2px}
+h2{font-size:16px;margin:0 0 8px}
 .sub{color:var(--mute);font-size:13px;margin:0 0 12px}
 nav{display:flex;gap:6px;margin-bottom:12px}
-nav button{flex:1;min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font-size:15px}
+nav button{flex:1;min-height:44px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;font-size:15px;padding:0 4px}
 nav button[aria-selected=true]{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
 section{display:none}section.on{display:block}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
@@ -28,32 +29,42 @@ section{display:none}section.on{display:block}
 button.p,button.s{min-height:48px;padding:0 16px;border-radius:10px;font-size:16px;border:1px solid var(--acc);cursor:pointer}
 button.p{background:var(--acc);color:var(--accink);font-weight:600}
 button.s{background:transparent;color:var(--acc)}
+button.chip{min-height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px}
+button.chip[aria-pressed=true]{background:var(--acc);border-color:var(--acc);color:var(--accink);font-weight:600}
 button:disabled{opacity:.45}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 label{display:block;font-size:14px;color:var(--mute);margin:10px 0 2px}
+label.inline{display:flex;align-items:center;gap:10px;color:var(--ink);font-size:16px;min-height:44px}
+label.inline input{width:22px;height:22px;min-height:0}
 input,select{width:100%;min-height:44px;font-size:16px;padding:6px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.stat{background:var(--bg);border-radius:8px;padding:8px 10px}.stat b{display:block;font-size:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg);border-radius:8px;padding:8px 10px}.stat b{display:block;font-size:19px}
 .stat span{font-size:12px;color:var(--mute)}
+.up{color:var(--bad)}.down{color:var(--ok)}
 table{width:100%;border-collapse:collapse;font-size:15px}
 td,th{padding:8px 4px;border-bottom:1px solid var(--line);text-align:left}
+tr[data-t]{cursor:pointer}
 td button{min-height:36px;border:0;background:none;color:var(--bad);font-size:14px}
 pre{white-space:pre-wrap;word-break:break-all;font:12px/1.4 ui-monospace,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;max-height:320px;overflow:auto}
 #msg{position:fixed;left:12px;right:12px;bottom:12px;max-width:616px;margin:0 auto;padding:12px 14px;border-radius:10px;background:var(--ink);color:var(--bg);display:none;z-index:9}
 #msg.bad{background:var(--bad);color:#fff}
 svg{width:100%;height:auto;display:block}
 .warn{border-left:4px solid var(--bad)}
+.bar{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ok)}
+.key{display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:13px;color:var(--mute)}
+.key i{display:inline-block;width:14px;height:3px;border-radius:2px}
 </style>
 </head>
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.3</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.4</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
   <button role="tab" data-tab="history" aria-selected="false">History</button>
-  <button role="tab" data-tab="profile" aria-selected="false">Profile</button>
+  <button role="tab" data-tab="people" aria-selected="false">People</button>
   <button role="tab" data-tab="log" aria-selected="false">Raw log</button>
 </nav>
 
@@ -61,21 +72,22 @@ svg{width:100%;height:auto;display:block}
   <div class="card" id="support"></div>
   <div class="card">
     <div class="big" id="liveW">&mdash;<small></small></div>
-    <div class="mute" id="liveS">Not connected. Wake the scale, then press Connect to scale.</div>
+    <div class="mute" id="liveS">Not connected. Step on the scale to wake it, then press Connect to scale.</div>
+    <div id="who"></div>
     <div class="row">
       <button class="p" id="btnConnect">Connect to scale</button>
+      <button class="s" id="btnPick">Choose scale from list</button>
       <button class="s" id="btnDisconnect" disabled>Disconnect</button>
-    </div>
-    <div class="row">
-      <button class="p" id="btnSave" disabled>Save this reading</button>
     </div>
     <div class="row">
       <button class="s" id="btnUnit" disabled>Set scale screen to pounds</button>
     </div>
   </div>
+  <div class="card" id="breakdown" hidden></div>
   <div class="card">
-    <b>Type one in</b>
+    <h2>Type one in</h2>
     <p class="mute">If the scale will not connect, you can still keep your history here.</p>
+    <label for="mP">Who</label><select id="mP"></select>
     <div class="grid">
       <div><label for="mW">Weight</label><input id="mW" type="number" step="0.1" inputmode="decimal"></div>
       <div><label for="mR">Impedance (ohms), optional</label><input id="mR" type="number" step="1" inputmode="numeric"></div>
@@ -85,33 +97,66 @@ svg{width:100%;height:auto;display:block}
 </section>
 
 <section id="history">
-  <div class="card"><div id="chart"></div></div>
-  <div class="card"><table id="tbl"></table><p class="mute" id="none">No readings saved yet.</p></div>
-  <div class="row">
-    <button class="s" id="btnCsv">Save history as CSV file</button>
-    <button class="s" id="btnJson">Save backup file</button>
-    <button class="s" id="btnImport">Restore from backup file</button>
-    <input type="file" id="fileImport" accept=".json,application/json" hidden>
+  <div class="row" id="hPeople" style="margin:0 0 8px"></div>
+  <div class="card">
+    <div class="grid" id="hStats"></div>
+    <div id="hGoal"></div>
+  </div>
+  <div class="card">
+    <div class="row" id="hRange" style="margin:0 0 8px">
+      <button class="chip" data-days="30">30 days</button>
+      <button class="chip" data-days="90">90 days</button>
+      <button class="chip" data-days="365">1 year</button>
+      <button class="chip" data-days="0">All</button>
+    </div>
+    <div id="chart"></div>
+  </div>
+  <div class="card" id="detail" hidden></div>
+  <div class="card"><p class="mute" style="margin-top:0">Tap a reading to see its full breakdown.</p><table id="tbl"></table><p class="mute" id="none">No readings saved yet.</p><div class="row"><button class="s" id="btnMore" hidden>Show all readings</button></div></div>
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="mute">Readings live only on this phone. Send a backup somewhere safe now and then.</p>
+    <div class="row">
+      <button class="p" id="btnShare">Send backup (Drive, email, text)</button>
+      <button class="s" id="btnImport">Restore from backup file</button>
+      <button class="s" id="btnCsv">Save history as spreadsheet (CSV)</button>
+      <input type="file" id="fileImport" accept=".json,application/json" hidden>
+    </div>
   </div>
 </section>
 
-<section id="profile">
+<section id="people">
   <div class="card">
-    <p class="mute">Used only for BMI and body estimates. Stays on this device.</p>
-    <label for="pUnit">Show weight in</label>
-    <select id="pUnit"><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select>
-    <label for="pSex">Sex (for the body estimate formulas)</label>
-    <select id="pSex"><option value="m">Male</option><option value="f">Female</option></select>
-    <label for="pAge">Age</label><input id="pAge" type="number" inputmode="numeric">
-    <label for="pHt">Height (inches)</label><input id="pHt" type="number" step="0.1" inputmode="decimal">
-    <div class="row"><button class="p" id="btnProfile">Save profile</button></div>
+    <label for="sUnit">Show weight in</label>
+    <select id="sUnit"><option value="lb">Pounds (lb)</option><option value="kg">Kilograms (kg)</option></select>
+    <label class="inline"><input type="checkbox" id="sAuto"> Save steady readings automatically</label>
+    <div class="row"><button class="p" id="btnSettings">Save settings</button></div>
   </div>
-  <div class="card warn mute">Body fat, muscle and water numbers are <b>estimates from public formulas</b>. They will not match the old Yolanda app, whose formulas were never published. Use them to watch your own trend, not to compare to other scales.</div>
+  <div class="card">
+    <h2>People</h2>
+    <p class="mute">Each person gets their own history. When someone steps on, the app picks who it is from their last weight, and asks if it can't tell.</p>
+    <div class="row" id="pList"></div>
+  </div>
+  <div class="card" id="pForm">
+    <h2 id="pTitle">Edit person</h2>
+    <label for="pName">Name</label><input id="pName" autocomplete="off">
+    <div class="grid">
+      <div><label for="pSex">Sex (for the formulas)</label><select id="pSex"><option value="m">Male</option><option value="f">Female</option></select></div>
+      <div><label for="pAge">Age</label><input id="pAge" type="number" inputmode="numeric"></div>
+      <div><label for="pHt">Height (inches)</label><input id="pHt" type="number" step="0.1" inputmode="decimal"></div>
+      <div><label for="pGoal" id="pGoalL">Goal weight (lb), optional</label><input id="pGoal" type="number" step="0.1" inputmode="decimal"></div>
+    </div>
+    <div class="row">
+      <button class="p" id="btnPerson">Save person</button>
+      <button class="s" id="btnDelPerson">Delete person</button>
+    </div>
+  </div>
+  <div class="card warn mute">Body fat, muscle, water and bone are <b>estimates from published formulas</b>, worked out from the scale's impedance reading. They will not match the old Yolanda app, whose formulas were never published. Use them to watch your own trend, not to compare with other scales.</div>
 </section>
 
 <section id="log">
   <div class="card">
-    <p class="mute">Everything the scale sends is written here as hex. If the weight does not show up, copy this log and send it &mdash; that is what is needed to teach the app your scale's exact format.</p>
+    <p class="mute">Everything the scale sends is written here as hex. If something looks wrong, copy this log and send it.</p>
     <div class="row">
       <button class="s" id="btnCopy">Copy log</button>
       <button class="s" id="btnClear">Clear log</button>
@@ -124,9 +169,10 @@ svg{width:100%;height:auto;display:block}
 
 <script>
 'use strict';
-// ===== 1. DECODERS (pure; no DOM, so tests/scale_app.js can run them) =====
+// ===== 1. DECODERS (pure; no DOM, so tests/check.js can run them) =====
 const hex = (dv) => Array.from(new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength))
   .map((b) => b.toString(16).padStart(2, '0')).join(' ');
+const KG_PER_LB = 0.45359237;
 
 // Bluetooth SIG Weight Scale Measurement (0x2A9D). Flags bit0: 0 = kg x0.005, 1 = lb x0.01.
 function decodeStandardWeight(dv) {
@@ -134,19 +180,22 @@ function decodeStandardWeight(dv) {
   const imperial = dv.getUint8(0) & 1;
   const raw = dv.getUint16(1, true);
   if (raw === 0xFFFF) return null;
-  const kg = imperial ? raw * 0.01 * 0.45359237 : raw * 0.005;
-  return { kg, stable: true, ohms: null };
+  const kg = imperial ? raw * 0.01 * KG_PER_LB : raw * 0.005;
+  return { kg, stable: true, ohms: null, ohms2: null };
 }
 
-// Yolanda/QingNiu family (service 0xFFE0 or 0xFFF0). Frame 0x10 = live weight.
-// Layout recalled from the open-source openScale driver and NOT yet checked against an
-// MF-BS2 -- the Raw log tab exists so a real capture can confirm or correct it.
+// Yolanda/QingNiu frame 0x10, confirmed on Michael's MF-BS2 (QN-Scale) on 2026-10-30:
+//   10 0b 15 29 86 01 01 d5 01 8b 42
+//            ^^^^^ weight, kg x100, big-endian (0x2986 = 106.30 kg) -- kg even with the
+//                  screen set to lb
+//                  ^^ 01 = steady, 00 = settling
+//                     ^^^^^ ^^^^^ two impedance readings in ohms (469, 395), 0 until steady
 function decodeQN(dv, scaleFactor) {
   if (dv.byteLength < 10 || dv.getUint8(0) !== 0x10) return null;
   const w = dv.getUint16(3, false) / (scaleFactor || 100);
   const stable = dv.getUint8(5) === 1;
-  const r1 = dv.getUint16(6, false);
-  return { kg: w, stable, ohms: stable && r1 > 0 ? r1 : null };
+  const r1 = dv.getUint16(6, false), r2 = dv.getUint16(8, false);
+  return { kg: w, stable, ohms: stable && r1 > 0 ? r1 : null, ohms2: stable && r2 > 0 ? r2 : null };
 }
 // The scale's own screen unit is set by the app, not by the scale: it is part of the 0x13
 // reply to the scale's 0x12 hello. 1 = kg, 2 = lb. The old Yolanda app was the only thing
@@ -155,67 +204,147 @@ const unitFrame = (unit) => [0x13, 0x09, 0x15, unit === 'lb' ? 2 : 1, 0x10, 0, 0
 const sumByte = (a) => a.reduce((s, b) => (s + b) & 0xFF, 0);
 const withSum = (a) => Uint8Array.from([...a, sumByte(a)]);
 
-// Sun et al. 2003 fat-free-mass equations, from impedance. Estimate only.
-function bodyEstimate(kg, ohms, p) {
-  if (!p || !p.ht || !p.age) return null;
-  const cm = p.ht * 2.54, m = cm / 100, male = p.sex === 'm';
+// ===== 2. BODY ESTIMATES =====
+// Every figure here is a published regression, not the vendor's (unpublished) one:
+//   fat-free mass, body water  Sun et al. 2003 (NHANES III), from height^2 / impedance
+//   skeletal muscle            Janssen et al. 2000
+//   resting calories           Katch-McArdle with fat-free mass; Mifflin-St Jeor without
+//   body fat with no impedance Deurenberg 1991, from BMI
+//   bone                       a flat 4.2% of fat-free mass -- a rough rule, labelled as such
+// Visceral fat is left out on purpose: there is no published formula for it from a
+// bathroom scale, and inventing a number would be worse than showing none.
+function bodyComp(kg, ohms, p) {
+  if (!p || !p.ht || !p.age || !(kg > 0)) return null;
+  const cm = p.ht * 2.54, m = cm / 100, male = p.sex === 'm' ? 1 : 0;
   const out = { bmi: kg / (m * m) };
-  out.fatPct = 1.2 * out.bmi + 0.23 * p.age - 10.8 * (male ? 1 : 0) - 5.4;   // Deurenberg
-  if (ohms) {
+  out.fatPct = 1.2 * out.bmi + 0.23 * p.age - 10.8 * male - 5.4;
+  out.bmr = 10 * kg + 6.25 * cm - 5 * p.age + (male ? 5 : -161);
+  if (ohms > 0) {
     const h2r = (cm * cm) / ohms;
     const ffm = male ? -10.678 + 0.262 * kg + 0.652 * h2r + 0.015 * ohms
                      : -9.529 + 0.168 * kg + 0.696 * h2r + 0.016 * ohms;
-    if (ffm > 0 && ffm < kg) { out.fatPct = (1 - ffm / kg) * 100; out.leanKg = ffm; out.waterKg = ffm * 0.73; }
+    if (ffm > 0 && ffm < kg) {
+      out.fatPct = (1 - ffm / kg) * 100;
+      out.leanKg = ffm;
+      out.waterKg = male ? 1.203 + 0.449 * h2r + 0.176 * kg : 3.747 + 0.450 * h2r + 0.113 * kg;
+      out.muscleKg = 0.401 * h2r + 3.825 * male - 0.071 * p.age + 5.102;
+      out.boneKg = ffm * 0.042;
+      out.bmr = 370 + 21.6 * ffm;
+    }
   }
+  out.fatKg = kg * out.fatPct / 100;
   return out;
 }
 
-// ===== 2. STORAGE =====
+// ===== 3. STORAGE =====
 const $ = (id) => document.getElementById(id);
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { say('Could not save on this device (' + e.message + '). Use "Save backup file" now.', true); return false; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { say('Could not save on this phone (' + e.message + '). Send a backup now from the History tab.', true); return false; } },
 };
 let readings = store.get('scale_readings', []);
-let profile = store.get('scale_profile', { unit: 'lb', sex: 'm', age: '', ht: '' });
-const toUnit = (kg) => profile.unit === 'lb' ? kg / 0.45359237 : kg;
+let people = store.get('scale_people', null);
+let settings = store.get('scale_settings', null);
+// Builds .1-.3 had one profile and no people. Turn that profile into the first person and
+// hand them every existing reading, so nothing saved before the upgrade goes missing.
+if (!people) {
+  const old = store.get('scale_profile', {});
+  people = [{ id: 'p1', name: 'Me', sex: old.sex || 'm', age: old.age || '', ht: old.ht || '', goal: null }];
+  settings = settings || { unit: old.unit || 'lb', auto: true, deviceId: null };
+  readings.forEach((r) => { if (!r.uid) r.uid = 'p1'; });
+  store.set('scale_people', people); store.set('scale_settings', settings); store.set('scale_readings', readings);
+}
+settings = Object.assign({ unit: 'lb', auto: true, deviceId: null }, settings);
+const person = (id) => people.find((p) => p.id === id);
+const toUnit = (kg) => settings.unit === 'lb' ? kg / KG_PER_LB : kg;
+const fromUnit = (v) => settings.unit === 'lb' ? v * KG_PER_LB : v;
 const fmt = (kg) => toUnit(kg).toFixed(1);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => '&#' + c.charCodeAt(0) + ';');
+const when = (t) => new Date(t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 let msgTimer;
-function say(t, bad) { const m = $('msg'); m.textContent = t; m.className = bad ? 'bad' : ''; m.style.display = 'block'; clearTimeout(msgTimer); msgTimer = setTimeout(() => { m.style.display = 'none'; }, bad ? 9000 : 3500); }
+function say(t, bad) { const m = $('msg'); m.textContent = t; m.className = bad ? 'bad' : ''; m.style.display = 'block'; clearTimeout(msgTimer); msgTimer = setTimeout(() => { m.style.display = 'none'; }, bad ? 9000 : 4000); }
 
-// ===== 3. BLUETOOTH =====
+// Who stepped on? The person whose last weight is close and nobody else's is. Two people
+// within a few pounds of each other, or nobody close, is a question rather than a guess --
+// a reading filed under the wrong person is worse than one tap.
+function guessPerson(kg) {
+  if (people.length === 1) return people[0].id;
+  const near = [];
+  people.forEach((p) => {
+    const last = readings.filter((r) => r.uid === p.id).pop();
+    if (last && Math.abs(last.kg - kg) <= Math.max(3, kg * 0.04)) near.push(p.id);
+  });
+  return near.length === 1 ? near[0] : null;
+}
+
+// ===== 4. BLUETOOTH =====
 const logLines = [];
 function log(s) { logLines.push(new Date().toLocaleTimeString() + '  ' + s); if (logLines.length > 400) logLines.shift(); $('rawlog').textContent = logLines.join('\n'); }
-let dev = null, current = null, qnFactor = 100, writeChar = null;
-const OPT = [0xFFE0, 0xFFF0, 0x181D, 0x181B, 0x180A, 0x180F].map((n) => n);
+let dev = null, current = null, qnFactor = 100, writeChar = null, connecting = false;
+// One saved reading per time on the scale. The scale repeats the steady frame every second
+// while you stand there; it only counts again after the weight drops off (you stepped off).
+let sessionSaved = false, pending = null, lastSaved = null;
+const OPT = [0xFFE0, 0xFFF0, 0x181D, 0x181B, 0x180A, 0x180F];
 
 function setLive(r) {
   current = r;
-  $('liveW').innerHTML = r ? fmt(r.kg) + '<small> ' + profile.unit + '</small>' : '&mdash;<small></small>';
-  $('liveS').textContent = r ? (r.stable ? 'Steady reading. Save it below.' : 'Settling... stay still.') : 'Waiting for a reading. Step on barefoot.';
-  $('btnSave').disabled = !(r && r.stable);
+  $('liveW').innerHTML = r ? fmt(r.kg) + '<small> ' + settings.unit + '</small>' : '&mdash;<small></small>';
+  if (r) $('liveS').textContent = r.stable ? 'Steady reading.' : 'Measuring... stay still, barefoot.';
+}
+function status(t) { $('liveS').textContent = t; }
+function connectedUI(on) {
+  $('btnDisconnect').disabled = !on;
+  $('btnConnect').disabled = on;
+  $('btnUnit').disabled = !(on && writeChar);
 }
 
+// Chrome can hand back a scale chosen before, without the pick-from-a-list step -- but only
+// where getDevices() exists (behind a flag on some Android builds). Where it doesn't, the
+// list is the only way, and Connect falls through to it.
+async function knownDevice() {
+  if (!navigator.bluetooth.getDevices || !settings.deviceId) return null;
+  try { return (await navigator.bluetooth.getDevices()).find((d) => d.id === settings.deviceId) || null; } catch (e) { return null; }
+}
+function hookDevice(d) {
+  dev = d;
+  d.ongattserverdisconnected = () => {
+    log('Disconnected'); writeChar = null; sessionSaved = false; connectedUI(false);
+    status('Scale went to sleep. Step on it again to wake it.');
+    waitForScale(d);
+  };
+  d.onadvertisementreceived = (ev) => {
+    if (ev.manufacturerData) ev.manufacturerData.forEach((v, k) => log('ADV mfr 0x' + k.toString(16) + ': ' + hex(v)));
+    if (!d.gatt.connected && !connecting) setupGatt(d);
+  };
+}
+// Listen for the scale waking up, and connect when it does. No tap needed.
+async function waitForScale(d) {
+  if (!d.watchAdvertisements) return false;
+  try { await d.watchAdvertisements(); status('Waiting for the scale. Step on it to wake it; it will connect on its own.'); return true; } catch (e) { log('watchAdvertisements: ' + e.message); return false; }
+}
 async function connect() {
   if (!navigator.bluetooth) return;
+  const d = await knownDevice();
+  if (d) { hookDevice(d); if (await waitForScale(d)) return; return setupGatt(d); }
+  return pick();
+}
+async function pick() {
+  let d;
+  try { d = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: OPT }); }
+  catch (e) { say(e.name === 'NotFoundError' ? 'No scale chosen.' : 'Bluetooth: ' + e.message, e.name !== 'NotFoundError'); return; }
+  log('Chose device: ' + (d.name || '(no name)') + ' id ' + d.id);
+  settings.deviceId = d.id; store.set('scale_settings', settings);
+  hookDevice(d);
+  waitForScale(d);
+  return setupGatt(d);
+}
+async function setupGatt(d) {
+  connecting = true; status('Connecting...');
   try {
-    dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: OPT });
-  } catch (e) { say(e.name === 'NotFoundError' ? 'No scale chosen.' : 'Bluetooth: ' + e.message, e.name !== 'NotFoundError'); return; }
-  log('Chose device: ' + (dev.name || '(no name)') + ' id ' + dev.id);
-  dev.addEventListener('gattserverdisconnected', () => { log('Disconnected'); writeChar = null; $('btnUnit').disabled = true; $('liveS').textContent = 'Disconnected.'; $('btnDisconnect').disabled = true; $('btnConnect').disabled = false; });
-  // Some scales never connect: they just shout their weight in the advertisement.
-  if (dev.watchAdvertisements) {
-    dev.addEventListener('advertisementreceived', (ev) => {
-      ev.manufacturerData.forEach((v, k) => log('ADV mfr 0x' + k.toString(16) + ': ' + hex(v)));
-      ev.serviceData.forEach((v, k) => log('ADV svc ' + k + ': ' + hex(v)));
-    });
-    dev.watchAdvertisements().catch((e) => log('watchAdvertisements: ' + e.message));
-  }
-  $('liveS').textContent = 'Connecting...'; $('btnConnect').disabled = true;
-  try {
-    const srv = await dev.gatt.connect();
+    const srv = await d.gatt.connect();
     const services = await srv.getPrimaryServices();
     log('Services: ' + services.map((s) => s.uuid).join(', '));
+    writeChar = null;
     for (const s of services) {
       let chars = [];
       try { chars = await s.getCharacteristics(); } catch (e) { continue; }
@@ -229,22 +358,25 @@ async function connect() {
           if (want || (qnSvc && !writeChar)) writeChar = c;
         }
         if (p.notify || p.indicate) {
-          try { await c.startNotifications(); c.addEventListener('characteristicvaluechanged', (ev) => onData(s.uuid, c.uuid, ev.target.value)); } catch (e) { log('  notify failed: ' + e.message); }
+          // A property, not addEventListener: Chrome can hand back the same object on a
+          // reconnect, and a second listener would mean every frame -- and every save -- twice.
+          c.oncharacteristicvaluechanged = (ev) => onData(s.uuid, c.uuid, ev.target.value);
+          try { await c.startNotifications(); } catch (e) { log('  notify failed: ' + e.message); }
         }
       }
     }
-    $('btnDisconnect').disabled = false;
-    $('btnUnit').disabled = !writeChar;
-    setLive(null);
+    sessionSaved = false; connectedUI(true); setLive(null);
+    status('Connected. Step on barefoot and stand still.');
     // The scale says hello (0x12) as soon as it connects, sometimes before notifications are
     // switched on, so that hello -- and the unit reply to it -- can be missed. Send the unit
-    // once anyway.
-    if (writeChar) send(unitFrame(profile.unit));
+    // once anyway. (On the MF-BS2 this is what it answers; it never sent a 0x12 in testing.)
+    if (writeChar) send(unitFrame(settings.unit));
   } catch (e) {
     log('Connect failed: ' + e.message);
-    say('Could not connect: ' + e.message + '. Wake the scale (step on it) and try again.', true);
-    $('btnConnect').disabled = false; $('liveS').textContent = 'Not connected.';
+    status('Could not connect. Step on the scale to wake it, then press Connect again.');
+    connectedUI(false);
   }
+  connecting = false;
 }
 
 function onData(svc, chr, dv) {
@@ -254,12 +386,15 @@ function onData(svc, chr, dv) {
   if (tag === '181d') r = decodeStandardWeight(dv);
   else if (tag === 'ffe0' || tag === 'fff0') {
     const t = dv.getUint8(0);
-    if (t === 0x12) send(unitFrame(profile.unit));
+    if (t === 0x12) send(unitFrame(settings.unit));
     else if (t === 0x14) { const s = Math.floor(Date.now() / 1000) - 946684800; send([0x20, 0x08, 0x15, s & 255, (s >> 8) & 255, (s >> 16) & 255, (s >> 24) & 255]); }
     else if (t === 0x21 && dv.byteLength > 10) qnFactor = dv.getUint8(10) === 1 ? 100 : 10;
     else r = decodeQN(dv, qnFactor);
   }
-  if (r) setLive(r);
+  if (!r) return;
+  setLive(r);
+  if (r.stable && !sessionSaved) onSteady(r);
+  else if (!r.stable && r.kg < 5) { sessionSaved = false; pending = null; renderWho(); }
 }
 async function send(arr) {
   if (!writeChar) return false;
@@ -267,79 +402,237 @@ async function send(arr) {
   try { await writeChar.writeValue(b); log('TX: ' + Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join(' ')); return true; } catch (e) { log('TX failed: ' + e.message); return false; }
 }
 
-// ===== 4. SAVING + HISTORY =====
-function addReading(kg, ohms, src) {
-  readings.push({ t: Date.now(), kg: +kg.toFixed(3), ohms: ohms || null, src });
+// ===== 5. SAVING =====
+function onSteady(r) {
+  sessionSaved = true;
+  const uid = settings.auto ? guessPerson(r.kg) : null;
+  if (uid) saveFor(uid, r, 'scale');
+  else { pending = r; lastSaved = null; renderWho(); }
+}
+function saveFor(uid, r, src) {
+  const rec = { t: Date.now(), uid, kg: +r.kg.toFixed(3), ohms: r.ohms || null, ohms2: r.ohms2 || null, src };
+  readings.push(rec);
   readings.sort((a, b) => a.t - b.t);
-  if (store.set('scale_readings', readings)) { say('Saved ' + fmt(kg) + ' ' + profile.unit + '.'); render(); return true; }
-  return false;
+  if (!store.set('scale_readings', readings)) { readings = readings.filter((x) => x !== rec); return false; }
+  pending = null; lastSaved = rec; viewing = uid;
+  say('Saved ' + fmt(rec.kg) + ' ' + settings.unit + ' for ' + person(uid).name + '.');
+  renderAll();
+  return true;
 }
+function renderWho() {
+  const w = $('who');
+  if (pending) {
+    w.innerHTML = '<p><b>Who is this?</b></p><div class="row">' + people.map((p) => '<button class="p" data-save="' + p.id + '">' + esc(p.name) + '</button>').join('') + '</div>';
+  } else if (lastSaved && person(lastSaved.uid)) {
+    const others = people.filter((p) => p.id !== lastSaved.uid);
+    w.innerHTML = '<p>Saved for <b>' + esc(person(lastSaved.uid).name) + '</b> at ' + new Date(lastSaved.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.</p><div class="row">' +
+      others.map((p) => '<button class="s" data-move="' + p.id + '">It was ' + esc(p.name) + '</button>').join('') +
+      '<button class="s" data-undo="1">Don\'t keep it</button></div>';
+  } else w.innerHTML = '';
+  renderBreakdown();
+}
+$('who').onclick = (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.save && pending) saveFor(b.dataset.save, pending, 'scale');
+  else if (b.dataset.move && lastSaved) { lastSaved.uid = b.dataset.move; viewing = lastSaved.uid; store.set('scale_readings', readings); say('Moved to ' + person(lastSaved.uid).name + '.'); renderAll(); }
+  else if (b.dataset.undo && lastSaved) { readings = readings.filter((r) => r !== lastSaved); lastSaved = null; store.set('scale_readings', readings); say('Reading removed.'); renderAll(); }
+};
+
+function breakdownHTML(r) {
+  const p = person(r.uid), e = bodyComp(r.kg, r.ohms, p);
+  if (!e) return '<p class="mute">Add ' + esc(p ? p.name : 'this person') + '\'s height and age on the People tab to see BMI and body estimates.</p>';
+  const w = (kg) => fmt(kg) + ' ' + settings.unit, pct = (kg) => (kg / r.kg * 100).toFixed(1) + '%';
+  const s = [['Body fat', e.fatPct.toFixed(1) + '%', w(e.fatKg)], ['BMI', e.bmi.toFixed(1), e.bmi < 18.5 ? 'under' : e.bmi < 25 ? 'healthy range' : e.bmi < 30 ? 'over' : 'obese range']];
+  if (e.leanKg) {
+    s.push(['Muscle', w(e.muscleKg), pct(e.muscleKg)], ['Body water', pct(e.waterKg), w(e.waterKg)],
+           ['Lean mass', w(e.leanKg), pct(e.leanKg)], ['Bone (rough)', w(e.boneKg), '']);
+  }
+  s.push(['Calories at rest', Math.round(e.bmr) + '', 'per day']);
+  return '<div class="grid">' + s.map((x) => '<div class="stat"><span>' + x[0] + '</span><b>' + x[1] + '</b><span>' + x[2] + '</span></div>').join('') + '</div>' +
+    (e.leanKg ? '' : '<p class="mute">No impedance on this reading, so body fat is from BMI only. Step on barefoot for the full breakdown.</p>');
+}
+function renderBreakdown() {
+  const r = lastSaved, b = $('breakdown');
+  b.hidden = !r;
+  if (r) b.innerHTML = '<h2>' + esc(person(r.uid) ? person(r.uid).name : '') + ' &middot; ' + fmt(r.kg) + ' ' + settings.unit + '</h2>' + breakdownHTML(r);
+}
+
+// ===== 6. HISTORY =====
+let viewing = people[0].id, days = 90, showAll = false;
+const DAY = 864e5;
+function avg7(rs, t) { const w = rs.filter((r) => r.t <= t && r.t > t - 7 * DAY); return w.reduce((s, r) => s + r.kg, 0) / w.length; }
 function render() {
-  const rows = readings.slice().reverse();
+  if (!person(viewing)) viewing = people[0].id;
+  $('hPeople').innerHTML = people.length > 1 ? people.map((p) => '<button class="chip" data-who="' + p.id + '" aria-pressed="' + (p.id === viewing) + '">' + esc(p.name) + '</button>').join('') : '';
+  document.querySelectorAll('#hRange button').forEach((b) => b.setAttribute('aria-pressed', +b.dataset.days === days));
+  const mine = readings.filter((r) => r.uid === viewing), p = person(viewing), u = settings.unit;
+
+  // Stats: latest, the 7-day average (what actually matters -- daily weight swings by a few
+  // pounds of water), and change against the average a week and a month back.
+  const last = mine[mine.length - 1], now = last ? avg7(mine, last.t) : null;
+  const change = (back) => {
+    if (!last) return '&mdash;';
+    const old = mine.filter((r) => r.t <= last.t - back * DAY).pop();
+    if (!old) return '&mdash;';
+    const d = toUnit(now) - toUnit(avg7(mine, old.t));
+    return '<span class="' + (d > 0 ? 'up' : 'down') + '">' + (d > 0 ? '+' : '') + d.toFixed(1) + ' ' + u + '</span>';
+  };
+  $('hStats').innerHTML = [['Latest', last ? fmt(last.kg) + ' ' + u : '&mdash;'], ['7-day average', last ? fmt(now) + ' ' + u : '&mdash;'],
+    ['Change, 1 week', change(7)], ['Change, 1 month', change(30)]].map((x) => '<div class="stat"><span>' + x[0] + '</span><b>' + x[1] + '</b></div>').join('');
+  if (p.goal && last) {
+    const first = mine[0], togo = toUnit(now) - toUnit(p.goal), total = toUnit(first.kg) - toUnit(p.goal);
+    const done = total ? Math.max(0, Math.min(1, 1 - togo / total)) : 1;
+    $('hGoal').innerHTML = '<p style="margin:10px 0 0">Goal <b>' + fmt(p.goal) + ' ' + u + '</b>: ' + (Math.abs(togo) < 0.5 ? 'reached.' : Math.abs(togo).toFixed(1) + ' ' + u + ' to go.') + '</p><div class="bar"><i style="width:' + (done * 100).toFixed(0) + '%"></i></div>';
+  } else $('hGoal').innerHTML = p.goal ? '' : '<p class="mute" style="margin:10px 0 0">Set a goal weight on the People tab to track progress.</p>';
+
+  // Chart
+  const pts = mine.filter((r) => !days || r.t >= Date.now() - days * DAY);
+  if (pts.length < 2) $('chart').innerHTML = '<p class="mute">The chart appears after two readings in this range.</p>';
+  else {
+    const ys = pts.map((r) => toUnit(r.kg)), av = pts.map((r) => toUnit(avg7(mine, r.t)));
+    const all = ys.concat(av, p.goal ? [toUnit(p.goal)] : []);
+    const lo = Math.floor(Math.min(...all) - 1), hi = Math.ceil(Math.max(...all) + 1), t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    const x = (t) => 34 + ((t - t0) / ((t1 - t0) || 1)) * 288, y = (v) => 10 + (1 - (v - lo) / (hi - lo)) * 130;
+    const day = (t) => new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' });
+    $('chart').innerHTML = '<svg viewBox="0 0 330 165" role="img" aria-label="Weight trend">' +
+      '<line x1="34" x2="322" y1="10" y2="10" stroke="var(--line)"/><line x1="34" x2="322" y1="140" y2="140" stroke="var(--line)"/>' +
+      (p.goal ? '<line x1="34" x2="322" y1="' + y(toUnit(p.goal)).toFixed(1) + '" y2="' + y(toUnit(p.goal)).toFixed(1) + '" stroke="var(--ok)" stroke-dasharray="5 4" stroke-width="1.5"/>' : '') +
+      pts.map((r, i) => '<circle cx="' + x(r.t).toFixed(1) + '" cy="' + y(ys[i]).toFixed(1) + '" r="2.5" fill="var(--acc)" opacity=".55"/>').join('') +
+      '<polyline fill="none" stroke="var(--avg)" stroke-width="2.5" points="' + pts.map((r, i) => x(r.t).toFixed(1) + ',' + y(av[i]).toFixed(1)).join(' ') + '"/>' +
+      '<text x="0" y="14" font-size="11" fill="var(--mute)">' + hi + '</text><text x="0" y="143" font-size="11" fill="var(--mute)">' + lo + '</text>' +
+      '<text x="34" y="158" font-size="11" fill="var(--mute)">' + day(t0) + '</text><text x="322" y="158" font-size="11" fill="var(--mute)" text-anchor="end">' + day(t1) + '</text></svg>' +
+      '<div><span class="key"><i style="background:var(--acc);opacity:.55"></i>each reading</span><span class="key"><i style="background:var(--avg)"></i>7-day average</span>' + (p.goal ? '<span class="key"><i style="background:var(--ok)"></i>goal</span>' : '') + '</div>';
+  }
+
+  const all = mine.slice().reverse(), rows = showAll ? all : all.slice(0, 20);
   $('none').style.display = rows.length ? 'none' : 'block';
+  $('btnMore').hidden = all.length <= 20;
+  $('btnMore').textContent = showAll ? 'Show latest 20 only' : 'Show all ' + all.length + ' readings';
   $('tbl').innerHTML = rows.length ? '<tr><th>When</th><th>Weight</th><th>Body fat</th><th></th></tr>' + rows.map((r) => {
-    const e = bodyEstimate(r.kg, r.ohms, profile);
-    return '<tr><td>' + new Date(r.t).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '</td><td>' + fmt(r.kg) + ' ' + profile.unit + '</td><td>' + (e ? e.fatPct.toFixed(1) + '%' : '&mdash;') + '</td><td><button data-del="' + r.t + '">Delete</button></td></tr>';
+    const e = bodyComp(r.kg, r.ohms, p);
+    return '<tr data-t="' + r.t + '"><td>' + when(r.t) + '</td><td>' + fmt(r.kg) + ' ' + u + '</td><td>' + (e ? e.fatPct.toFixed(1) + '%' : '&mdash;') + '</td><td><button data-del="' + r.t + '">Delete</button></td></tr>';
   }).join('') : '';
-  const pts = readings.slice(-60);
-  if (pts.length < 2) { $('chart').innerHTML = '<p class="mute">The trend chart appears after two readings.</p>'; return; }
-  const ys = pts.map((r) => toUnit(r.kg)), lo = Math.min(...ys), hi = Math.max(...ys), span = (hi - lo) || 1;
-  const x = (i) => 30 + (i / (pts.length - 1)) * 290, y = (v) => 10 + (1 - (v - lo) / span) * 120;
-  $('chart').innerHTML = '<svg viewBox="0 0 330 150" role="img" aria-label="Weight trend"><polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="' + ys.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ') + '"/>' +
-    '<text x="2" y="14" font-size="11" fill="var(--mute)">' + hi.toFixed(0) + '</text><text x="2" y="132" font-size="11" fill="var(--mute)">' + lo.toFixed(0) + '</text></svg>';
 }
+function renderPeople() {
+  $('pList').innerHTML = people.map((p) => '<button class="chip" data-edit="' + p.id + '" aria-pressed="' + (p.id === editing) + '">' + esc(p.name) + '</button>').join('') +
+    '<button class="chip" data-edit="new" aria-pressed="' + (editing === 'new') + '">+ Add person</button>';
+  const p = person(editing) || { name: '', sex: 'f', age: '', ht: '', goal: null };
+  $('pTitle').textContent = editing === 'new' ? 'Add person' : 'Edit ' + p.name;
+  $('pName').value = p.name; $('pSex').value = p.sex; $('pAge').value = p.age; $('pHt').value = p.ht;
+  $('pGoal').value = p.goal ? fmt(p.goal) : '';
+  $('pGoalL').textContent = 'Goal weight (' + settings.unit + '), optional';
+  $('btnDelPerson').hidden = editing === 'new' || people.length < 2;
+  $('mP').innerHTML = people.map((x) => '<option value="' + x.id + '">' + esc(x.name) + '</option>').join('');
+  $('mP').value = viewing;
+  $('btnUnit').textContent = 'Set scale screen to ' + (settings.unit === 'lb' ? 'pounds' : 'kilograms');
+}
+function renderAll() { render(); renderPeople(); renderWho(); setLive(current); }
+
+// ===== 7. BACKUP =====
+const backupText = () => JSON.stringify({ app: 'Scale Log', saved: new Date().toISOString(), people, settings, readings });
 function download(name, text, type) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
-  say('Saved "' + name + '" to this device\'s Downloads folder.');
+  say('Saved "' + name + '" to this phone\'s Downloads folder.');
+}
+async function shareBackup() {
+  const name = 'scale_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+  const file = new File([backupText()], name, { type: 'application/json' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Scale Log backup' }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  download(name, backupText(), 'application/json');
+}
+function restore(d) {
+  if (!Array.isArray(d.readings)) throw new Error('not a Scale Log backup');
+  // Older backups have no people: their readings belong to whoever is first here.
+  (d.people || []).forEach((p) => { if (p && p.id && !person(p.id)) people.push(p); });
+  const key = (r) => r.t + '|' + (r.uid || people[0].id);
+  const have = new Set(readings.map(key));
+  const add = d.readings.filter((r) => r && r.kg > 0 && r.t).map((r) => Object.assign({}, r, { uid: r.uid && person(r.uid) ? r.uid : people[0].id })).filter((r) => !have.has(key(r)));
+  readings = readings.concat(add).sort((a, b) => a.t - b.t);
+  store.set('scale_people', people); store.set('scale_readings', readings);
+  return add.length;
 }
 
-// ===== 5. WIRING =====
+// ===== 8. WIRING =====
+let editing = people[0].id;
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-selected', x === b));
   document.querySelectorAll('section').forEach((s) => s.classList.toggle('on', s.id === b.dataset.tab));
 }));
 $('btnConnect').onclick = connect;
-$('btnDisconnect').onclick = () => { if (dev && dev.gatt.connected) dev.gatt.disconnect(); };
+$('btnPick').onclick = pick;
+$('btnDisconnect').onclick = () => { if (dev) { if (dev.unwatchAdvertisements) try { dev.unwatchAdvertisements(); } catch (e) { /* not watching */ } dev.ongattserverdisconnected = null; if (dev.gatt.connected) dev.gatt.disconnect(); } writeChar = null; connectedUI(false); status('Disconnected.'); };
 $('btnUnit').onclick = async () => {
-  const name = profile.unit === 'lb' ? 'pounds' : 'kilograms';
-  if (await send(unitFrame(profile.unit))) say('Told the scale to show ' + name + '. Step off, then step back on to see it. Still wrong? Send the Raw log.');
+  const name = settings.unit === 'lb' ? 'pounds' : 'kilograms';
+  if (await send(unitFrame(settings.unit))) say('Told the scale to show ' + name + '. Step off, then step back on to see it.');
   else say('Could not reach the scale. Step on it to wake it, press Connect to scale, then try again.', true);
 };
-const unitLabel = () => { $('btnUnit').textContent = 'Set scale screen to ' + (profile.unit === 'lb' ? 'pounds' : 'kilograms'); };
-$('btnSave').onclick = () => { if (current && addReading(current.kg, current.ohms, 'scale')) setLive(null); };
 $('btnManual').onclick = () => {
   const v = parseFloat($('mW').value); if (!(v > 0)) { say('Type a weight first.', true); return; }
-  const kg = profile.unit === 'lb' ? v * 0.45359237 : v;
-  if (addReading(kg, parseFloat($('mR').value) || null, 'typed')) { $('mW').value = ''; $('mR').value = ''; }
+  if (saveFor($('mP').value, { kg: fromUnit(v), ohms: parseFloat($('mR').value) || null }, 'typed')) { $('mW').value = ''; $('mR').value = ''; }
 };
-$('tbl').onclick = (e) => { const t = e.target.dataset.del; if (t && confirm('Delete this reading?')) { readings = readings.filter((r) => String(r.t) !== t); store.set('scale_readings', readings); render(); } };
-$('btnCsv').onclick = () => download('scale_history.csv', 'time,kg,lb,ohms,source\n' + readings.map((r) => [new Date(r.t).toISOString(), r.kg, (r.kg / 0.45359237).toFixed(1), r.ohms || '', r.src].join(',')).join('\n'), 'text/csv');
-$('btnJson').onclick = () => download('scale_backup.json', JSON.stringify({ readings, profile }), 'application/json');
+$('hPeople').onclick = (e) => { const b = e.target.closest('[data-who]'); if (b) { viewing = b.dataset.who; $('detail').hidden = true; render(); } };
+$('hRange').onclick = (e) => { const b = e.target.closest('[data-days]'); if (b) { days = +b.dataset.days; render(); } };
+$('tbl').onclick = (e) => {
+  const del = e.target.dataset.del;
+  if (del) {
+    if (confirm('Delete this reading?')) { readings = readings.filter((r) => !(String(r.t) === del && r.uid === viewing)); store.set('scale_readings', readings); $('detail').hidden = true; render(); }
+    return;
+  }
+  const tr = e.target.closest('tr[data-t]'); if (!tr) return;
+  const r = readings.find((x) => String(x.t) === tr.dataset.t && x.uid === viewing); if (!r) return;
+  $('detail').hidden = false;
+  $('detail').innerHTML = '<h2>' + when(r.t) + ' &middot; ' + fmt(r.kg) + ' ' + settings.unit + '</h2>' + breakdownHTML(r) + (r.ohms ? '<p class="mute">Impedance ' + r.ohms + (r.ohms2 ? ' / ' + r.ohms2 : '') + ' ohms.</p>' : '');
+  $('detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+};
+$('btnMore').onclick = () => { showAll = !showAll; render(); };
+$('btnShare').onclick = shareBackup;
+$('btnCsv').onclick = () => download('scale_history.csv', 'time,person,kg,lb,ohms,ohms2,body_fat_pct,source\n' + readings.map((r) => {
+  const p = person(r.uid), e = bodyComp(r.kg, r.ohms, p);
+  return [new Date(r.t).toISOString(), p ? '"' + p.name.replace(/"/g, '""') + '"' : '', r.kg, (r.kg / KG_PER_LB).toFixed(1), r.ohms || '', r.ohms2 || '', e ? e.fatPct.toFixed(1) : '', r.src].join(',');
+}).join('\n'), 'text/csv');
 $('btnImport').onclick = () => $('fileImport').click();
 $('fileImport').onchange = async (e) => {
-  try {
-    const d = JSON.parse(await e.target.files[0].text());
-    if (!Array.isArray(d.readings)) throw new Error('not a Scale Log backup');
-    const have = new Set(readings.map((r) => r.t));
-    readings = readings.concat(d.readings.filter((r) => r && r.kg > 0 && !have.has(r.t))).sort((a, b) => a.t - b.t);
-    store.set('scale_readings', readings); render(); say('Restored. History now has ' + readings.length + ' readings.');
-  } catch (err) { say('That file could not be read: ' + err.message, true); }
+  try { const n = restore(JSON.parse(await e.target.files[0].text())); renderAll(); say('Restored ' + n + ' new readings.'); }
+  catch (err) { say('That file could not be read: ' + err.message, true); }
   e.target.value = '';
 };
-$('btnProfile').onclick = () => {
-  profile = { unit: $('pUnit').value, sex: $('pSex').value, age: parseFloat($('pAge').value) || '', ht: parseFloat($('pHt').value) || '' };
-  if (store.set('scale_profile', profile)) { say('Profile saved.'); unitLabel(); render(); setLive(current); }
+$('btnSettings').onclick = () => {
+  settings.unit = $('sUnit').value; settings.auto = $('sAuto').checked;
+  if (store.set('scale_settings', settings)) { say('Settings saved.' + (writeChar ? '' : ' Connect to the scale and press "Set scale screen" to change its screen too.')); renderAll(); }
 };
-$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logLines.join('\n')); say('Log copied.'); } catch (e) { say('Could not copy -- select the text and copy it by hand.', true); } };
+$('pList').onclick = (e) => { const b = e.target.closest('[data-edit]'); if (b) { editing = b.dataset.edit; renderPeople(); } };
+$('btnPerson').onclick = () => {
+  const name = $('pName').value.trim(); if (!name) { say('Type a name first.', true); return; }
+  const g = parseFloat($('pGoal').value);
+  const p = { id: editing === 'new' ? 'p' + Date.now() : editing, name, sex: $('pSex').value, age: parseFloat($('pAge').value) || '', ht: parseFloat($('pHt').value) || '', goal: g > 0 ? fromUnit(g) : null };
+  if (editing === 'new') people.push(p); else people[people.findIndex((x) => x.id === editing)] = p;
+  editing = p.id;
+  if (store.set('scale_people', people)) { say('Saved ' + name + '.'); renderAll(); }
+};
+$('btnDelPerson').onclick = () => {
+  const p = person(editing); if (!p || people.length < 2) return;
+  const n = readings.filter((r) => r.uid === p.id).length;
+  if (!confirm('Delete ' + p.name + ' and their ' + n + ' readings? This cannot be undone.')) return;
+  people = people.filter((x) => x !== p); readings = readings.filter((r) => r.uid !== p.id);
+  store.set('scale_people', people); store.set('scale_readings', readings);
+  editing = people[0].id; if (viewing === p.id) viewing = people[0].id;
+  renderAll();
+};
+$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logLines.join('\n')); say('Log copied.'); } catch (e) { say('Could not copy. Select the text and copy it by hand.', true); } };
 $('btnClear').onclick = () => { logLines.length = 0; $('rawlog').textContent = 'Nothing yet.'; };
 
-unitLabel(); $('pUnit').value = profile.unit; $('pSex').value = profile.sex; $('pAge').value = profile.age; $('pHt').value = profile.ht;
-$('support').innerHTML = navigator.bluetooth
-  ? '<span class="mute">Bluetooth is available in this browser.</span>'
-  : '<b>This browser cannot talk to the scale.</b><p class="mute">Open this file in <b>Chrome on Android</b> or Chrome/Edge on a computer. iPhones need the free <b>Bluefy</b> browser. You can still type readings in below.</p>';
-if (!navigator.bluetooth) $('btnConnect').disabled = true;
-render();
+$('sUnit').value = settings.unit; $('sAuto').checked = settings.auto;
+$('support').hidden = !!navigator.bluetooth;
+$('support').innerHTML = '<b>This browser cannot talk to the scale.</b><p class="mute">Open this app in <b>Chrome on Android</b> or Chrome/Edge on a computer. iPhones need the free <b>Bluefy</b> browser. You can still type readings in below.</p>';
+if (!navigator.bluetooth) { $('btnConnect').disabled = true; $('btnPick').disabled = true; }
+renderAll();
+// Already paired once and Chrome allows it: start listening straight away, so opening the
+// app and stepping on the scale is all it takes.
+if (navigator.bluetooth) knownDevice().then((d) => { if (d) { hookDevice(d); waitForScale(d); } });
 // Lets Chrome offer "Install app" and keeps it opening offline. Only over https -- opened as a
 // plain file there is nothing to register against, and that is fine.
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

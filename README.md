@@ -4,34 +4,33 @@ An app for the **Multifun MF-BS2** body composition scale, made because the vend
 
 **Open it:** https://ms1535.github.io/scale-app/
 
-## iPhone setup (one time)
+## Android setup (one time)
 
-1. Install **Bluefy – Web BLE Browser** from the App Store (free). Safari can't talk to Bluetooth scales; Bluefy can.
-2. Open Bluefy and go to `https://ms1535.github.io/scale-app/`.
-3. Bookmark it in Bluefy.
-4. Open the **Profile** tab, fill in height, age and sex, and press **Save profile**.
-
-## Scale screen stuck on kg
-
-The scale's screen unit is set by the app, not by the scale. To switch it to pounds:
-
-1. Make sure **Profile** says **Pounds (lb)** and is saved.
-2. Step on the scale to wake it, then press **Connect to scale**.
-3. Press **Set scale screen to pounds**, step off, and step back on.
-
-The app also sends this every time it connects. If the screen still shows kg, send the Raw log.
+1. Open the link in Chrome and tap **Install** (or **⋮ → Install app**). It then opens full screen from its own icon and works with no signal.
+2. **People** tab: fill in your name, age, height and optional goal, and press **Save person**. Press **+ Add person** for anyone else who uses the scale.
+3. **Weigh in** tab: step on the scale to wake it, press **Connect to scale**, and pick **QN-Scale** from the list.
+4. Press **Set scale screen to pounds** if the scale's own screen shows kg.
 
 ## Weighing in
 
-1. Open Bluefy, then the bookmark.
-2. Step on the scale to wake it, then press **Connect to scale** and pick the scale from the list.
-3. Stand still, barefoot. When it says **Steady reading**, press **Save this reading**.
+1. Open the app, step on the scale barefoot, and press **Connect to scale** if it hasn't connected on its own.
+2. Stand still until the weight is steady (about 10 seconds; the impedance reading takes longest).
+3. It saves by itself, to whoever's last weight is closest. If two people are close, or it's someone new, it asks **Who is this?**
+4. Saved to the wrong person? Press **It was …** to move it, or **Don't keep it** to drop it.
 
-If the weight never shows up: open the **Raw log** tab, press **Copy log**, and send it over. That is what is needed to fix the app for this scale.
+## History
+
+- Switch between people at the top. The chart shows each reading and the **7-day average**, which is the number to watch; day-to-day weight swings by a few pounds of water.
+- Tap a reading for its full breakdown: body fat, muscle, water, lean mass, bone and resting calories.
+- **Send backup** opens Android's share menu: Drive, email or a text to yourself. **Restore from backup file** brings it back on a new phone.
+
+## iPhone
+
+Safari can't talk to Bluetooth scales. Install **Bluefy – Web BLE Browser** (free), open the link in it, and bookmark it.
 
 ## Notes
 
-- Readings are stored only on the phone. Nothing is sent anywhere. Use **Save backup file** on the History tab now and then.
-- Body fat and water figures are estimates from public formulas and won't match the old Yolanda app.
-- Android: open the link in Chrome and tap **Install** (or **⋮ → Install app**). It then opens full screen from its own icon, and works with no signal.
+- Readings are stored only on the phone. Nothing is sent anywhere.
+- Body figures are estimates from published formulas (listed in `index.html`, section 2) and won't match the old Yolanda app. There is no visceral fat figure: no published formula exists for it from a bathroom scale.
+- Scale protocol, confirmed on this MF-BS2 (shows up as **QN-Scale**): service FFE0, notifications on FFE1, commands on FFE3. Weight frame `10 0b 15 WW WW SS R1 R1 R2 R2 CS`, weight in kg ×100.
 - Check: `node tests/check.js`.
