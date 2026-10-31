@@ -1,0 +1,14 @@
+{
+  "name": "Scale Log",
+  "short_name": "Scale Log",
+  "description": "Weight and body composition log for the Multifun MF-BS2 scale",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#1f5fbf",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

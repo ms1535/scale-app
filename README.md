@@ -33,5 +33,5 @@ If the weight never shows up: open the **Raw log** tab, press **Copy log**, and 
 
 - Readings are stored only on the phone. Nothing is sent anywhere. Use **Save backup file** on the History tab now and then.
 - Body fat and water figures are estimates from public formulas and won't match the old Yolanda app.
-- Android: open the link in Chrome; no extra app needed.
+- Android: open the link in Chrome and tap **Install** (or **⋮ → Install app**). It then opens full screen from its own icon, and works with no signal.
 - Check: `node tests/check.js`.
