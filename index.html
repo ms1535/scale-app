@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Scale Log</title>
-<!-- Build 2026-10-31.1 -->
+<!-- Build 2026-10-31.2 -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a}
 @media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c}}
@@ -44,7 +44,7 @@ svg{width:100%;height:auto;display:block}
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.1</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.2</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
@@ -64,6 +64,9 @@ svg{width:100%;height:auto;display:block}
     </div>
     <div class="row">
       <button class="p" id="btnSave" disabled>Save this reading</button>
+    </div>
+    <div class="row">
+      <button class="s" id="btnUnit" disabled>Set scale screen to pounds</button>
     </div>
   </div>
   <div class="card">
@@ -141,6 +144,10 @@ function decodeQN(dv, scaleFactor) {
   const r1 = dv.getUint16(6, false);
   return { kg: w, stable, ohms: stable && r1 > 0 ? r1 : null };
 }
+// The scale's own screen unit is set by the app, not by the scale: it is part of the 0x13
+// reply to the scale's 0x12 hello. 1 = kg, 2 = lb. The old Yolanda app was the only thing
+// sending it, which is how a scale gets stuck on kg once that app is gone.
+const unitFrame = (unit) => [0x13, 0x09, 0x15, unit === 'lb' ? 2 : 1, 0x10, 0, 0, 0];
 const sumByte = (a) => a.reduce((s, b) => (s + b) & 0xFF, 0);
 const withSum = (a) => Uint8Array.from([...a, sumByte(a)]);
 
@@ -191,7 +198,7 @@ async function connect() {
     dev = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: OPT });
   } catch (e) { say(e.name === 'NotFoundError' ? 'No scale chosen.' : 'Bluetooth: ' + e.message, e.name !== 'NotFoundError'); return; }
   log('Chose device: ' + (dev.name || '(no name)') + ' id ' + dev.id);
-  dev.addEventListener('gattserverdisconnected', () => { log('Disconnected'); $('liveS').textContent = 'Disconnected.'; $('btnDisconnect').disabled = true; $('btnConnect').disabled = false; });
+  dev.addEventListener('gattserverdisconnected', () => { log('Disconnected'); writeChar = null; $('btnUnit').disabled = true; $('liveS').textContent = 'Disconnected.'; $('btnDisconnect').disabled = true; $('btnConnect').disabled = false; });
   // Some scales never connect: they just shout their weight in the advertisement.
   if (dev.watchAdvertisements) {
     dev.addEventListener('advertisementreceived', (ev) => {
@@ -211,14 +218,24 @@ async function connect() {
       for (const c of chars) {
         const p = c.properties;
         log(' ' + s.uuid.slice(4, 8) + '/' + c.uuid.slice(4, 8) + ' ' + ['read', 'write', 'writeWithoutResponse', 'notify', 'indicate'].filter((k) => p[k]).join(','));
-        if (p.write || p.writeWithoutResponse) { if (!writeChar || s.uuid.startsWith('0000ffe') || s.uuid.startsWith('0000fff')) writeChar = c; }
+        // QN scales take commands on FFE3 (under FFE0) or FFF2 (under FFF0). Prefer those over
+        // any other writable characteristic, which might be the battery or device-info service.
+        if (p.write || p.writeWithoutResponse) {
+          const want = /^0000ff(e3|f2)/.test(c.uuid), qnSvc = /^0000ff(e0|f0)/.test(s.uuid);
+          if (want || (qnSvc && !writeChar)) writeChar = c;
+        }
         if (p.notify || p.indicate) {
           try { await c.startNotifications(); c.addEventListener('characteristicvaluechanged', (ev) => onData(s.uuid, c.uuid, ev.target.value)); } catch (e) { log('  notify failed: ' + e.message); }
         }
       }
     }
     $('btnDisconnect').disabled = false;
+    $('btnUnit').disabled = !writeChar;
     setLive(null);
+    // The scale says hello (0x12) as soon as it connects, sometimes before notifications are
+    // switched on, so that hello -- and the unit reply to it -- can be missed. Send the unit
+    // once anyway.
+    if (writeChar) send(unitFrame(profile.unit));
   } catch (e) {
     log('Connect failed: ' + e.message);
     say('Could not connect: ' + e.message + '. Wake the scale (step on it) and try again.', true);
@@ -233,7 +250,7 @@ function onData(svc, chr, dv) {
   if (tag === '181d') r = decodeStandardWeight(dv);
   else if (tag === 'ffe0' || tag === 'fff0') {
     const t = dv.getUint8(0);
-    if (t === 0x12) send([0x13, 0x09, 0x15, profile.unit === 'lb' ? 2 : 1, 0x10, 0, 0, 0]);
+    if (t === 0x12) send(unitFrame(profile.unit));
     else if (t === 0x14) { const s = Math.floor(Date.now() / 1000) - 946684800; send([0x20, 0x08, 0x15, s & 255, (s >> 8) & 255, (s >> 16) & 255, (s >> 24) & 255]); }
     else if (t === 0x21 && dv.byteLength > 10) qnFactor = dv.getUint8(10) === 1 ? 100 : 10;
     else r = decodeQN(dv, qnFactor);
@@ -241,9 +258,9 @@ function onData(svc, chr, dv) {
   if (r) setLive(r);
 }
 async function send(arr) {
-  if (!writeChar) return;
+  if (!writeChar) return false;
   const b = withSum(arr);
-  try { await writeChar.writeValue(b); log('TX: ' + Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join(' ')); } catch (e) { log('TX failed: ' + e.message); }
+  try { await writeChar.writeValue(b); log('TX: ' + Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join(' ')); return true; } catch (e) { log('TX failed: ' + e.message); return false; }
 }
 
 // ===== 4. SAVING + HISTORY =====
@@ -280,6 +297,12 @@ document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click
 }));
 $('btnConnect').onclick = connect;
 $('btnDisconnect').onclick = () => { if (dev && dev.gatt.connected) dev.gatt.disconnect(); };
+$('btnUnit').onclick = async () => {
+  const name = profile.unit === 'lb' ? 'pounds' : 'kilograms';
+  if (await send(unitFrame(profile.unit))) say('Told the scale to show ' + name + '. Step off, then step back on to see it. Still wrong? Send the Raw log.');
+  else say('Could not reach the scale. Step on it to wake it, press Connect to scale, then try again.', true);
+};
+const unitLabel = () => { $('btnUnit').textContent = 'Set scale screen to ' + (profile.unit === 'lb' ? 'pounds' : 'kilograms'); };
 $('btnSave').onclick = () => { if (current && addReading(current.kg, current.ohms, 'scale')) setLive(null); };
 $('btnManual').onclick = () => {
   const v = parseFloat($('mW').value); if (!(v > 0)) { say('Type a weight first.', true); return; }
@@ -302,12 +325,12 @@ $('fileImport').onchange = async (e) => {
 };
 $('btnProfile').onclick = () => {
   profile = { unit: $('pUnit').value, sex: $('pSex').value, age: parseFloat($('pAge').value) || '', ht: parseFloat($('pHt').value) || '' };
-  if (store.set('scale_profile', profile)) { say('Profile saved.'); render(); setLive(current); }
+  if (store.set('scale_profile', profile)) { say('Profile saved.'); unitLabel(); render(); setLive(current); }
 };
 $('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logLines.join('\n')); say('Log copied.'); } catch (e) { say('Could not copy -- select the text and copy it by hand.', true); } };
 $('btnClear').onclick = () => { logLines.length = 0; $('rawlog').textContent = 'Nothing yet.'; };
 
-$('pUnit').value = profile.unit; $('pSex').value = profile.sex; $('pAge').value = profile.age; $('pHt').value = profile.ht;
+unitLabel(); $('pUnit').value = profile.unit; $('pSex').value = profile.sex; $('pAge').value = profile.age; $('pHt').value = profile.ht;
 $('support').innerHTML = navigator.bluetooth
   ? '<span class="mute">Bluetooth is available in this browser.</span>'
   : '<b>This browser cannot talk to the scale.</b><p class="mute">Open this file in <b>Chrome on Android</b> or Chrome/Edge on a computer. iPhones need the free <b>Bluefy</b> browser. You can still type readings in below.</p>';

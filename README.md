@@ -11,6 +11,16 @@ An app for the **Multifun MF-BS2** body composition scale, made because the vend
 3. Bookmark it in Bluefy.
 4. Open the **Profile** tab, fill in height, age and sex, and press **Save profile**.
 
+## Scale screen stuck on kg
+
+The scale's screen unit is set by the app, not by the scale. To switch it to pounds:
+
+1. Make sure **Profile** says **Pounds (lb)** and is saved.
+2. Step on the scale to wake it, then press **Connect to scale**.
+3. Press **Set scale screen to pounds**, step off, and step back on.
+
+The app also sends this every time it connects. If the screen still shows kg, send the Raw log.
+
 ## Weighing in
 
 1. Open Bluefy, then the bookmark.
