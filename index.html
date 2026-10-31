@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1f5fbf">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Build 2026-10-31.4 -->
+<!-- Build 2026-10-31.5 -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a;--avg:#c76b00}
 @media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c;--avg:#ffb054}}
@@ -59,7 +59,7 @@ svg{width:100%;height:auto;display:block}
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.4</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.5</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
@@ -284,7 +284,12 @@ let dev = null, current = null, qnFactor = 100, writeChar = null, connecting = f
 // One saved reading per time on the scale. The scale repeats the steady frame every second
 // while you stand there; it only counts again after the weight drops off (you stepped off).
 let sessionSaved = false, pending = null, lastSaved = null;
+const waiting = [];   // readings taken while the app was closed that still need a name
 const OPT = [0xFFE0, 0xFFF0, 0x181D, 0x181B, 0x180A, 0x180F];
+// Inside the Android app (android/ in this repo) there is no Web Bluetooth. The app's own
+// service talks to the scale -- including with this screen closed -- and hands frames to
+// onData() below, so decoding, saving and the raw log are the same code either way.
+const native = window.NativeScale || null;
 
 function setLive(r) {
   current = r;
@@ -323,12 +328,14 @@ async function waitForScale(d) {
   try { await d.watchAdvertisements(); status('Waiting for the scale. Step on it to wake it; it will connect on its own.'); return true; } catch (e) { log('watchAdvertisements: ' + e.message); return false; }
 }
 async function connect() {
+  if (native) { native.connect(); return; }
   if (!navigator.bluetooth) return;
   const d = await knownDevice();
   if (d) { hookDevice(d); if (await waitForScale(d)) return; return setupGatt(d); }
   return pick();
 }
 async function pick() {
+  if (native) { native.pair(); return; }
   let d;
   try { d = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: OPT }); }
   catch (e) { say(e.name === 'NotFoundError' ? 'No scale chosen.' : 'Bluetooth: ' + e.message, e.name !== 'NotFoundError'); return; }
@@ -386,15 +393,16 @@ function onData(svc, chr, dv) {
   if (tag === '181d') r = decodeStandardWeight(dv);
   else if (tag === 'ffe0' || tag === 'fff0') {
     const t = dv.getUint8(0);
-    if (t === 0x12) send(unitFrame(settings.unit));
-    else if (t === 0x14) { const s = Math.floor(Date.now() / 1000) - 946684800; send([0x20, 0x08, 0x15, s & 255, (s >> 8) & 255, (s >> 16) & 255, (s >> 24) & 255]); }
+    // Inside the Android app its service answers the handshake itself.
+    if (t === 0x12) { if (!native) send(unitFrame(settings.unit)); }
+    else if (t === 0x14) { if (!native) { const s = Math.floor(Date.now() / 1000) - 946684800; send([0x20, 0x08, 0x15, s & 255, (s >> 8) & 255, (s >> 16) & 255, (s >> 24) & 255]); } }
     else if (t === 0x21 && dv.byteLength > 10) qnFactor = dv.getUint8(10) === 1 ? 100 : 10;
     else r = decodeQN(dv, qnFactor);
   }
   if (!r) return;
   setLive(r);
   if (r.stable && !sessionSaved) onSteady(r);
-  else if (!r.stable && r.kg < 5) { sessionSaved = false; pending = null; renderWho(); }
+  else if (!r.stable && r.kg < 5) sessionSaved = false;   // stepped off; an unanswered "Who is this?" stays put
 }
 async function send(arr) {
   if (!writeChar) return false;
@@ -407,22 +415,28 @@ function onSteady(r) {
   sessionSaved = true;
   const uid = settings.auto ? guessPerson(r.kg) : null;
   if (uid) saveFor(uid, r, 'scale');
-  else { pending = r; lastSaved = null; renderWho(); }
+  else ask(r);
+}
+function ask(r) {
+  if (pending) waiting.push(r); else { pending = r; lastSaved = null; }
+  renderWho();
 }
 function saveFor(uid, r, src) {
-  const rec = { t: Date.now(), uid, kg: +r.kg.toFixed(3), ohms: r.ohms || null, ohms2: r.ohms2 || null, src };
+  const rec = { t: r.t || Date.now(), uid, kg: +r.kg.toFixed(3), ohms: r.ohms || null, ohms2: r.ohms2 || null, src };
   readings.push(rec);
   readings.sort((a, b) => a.t - b.t);
   if (!store.set('scale_readings', readings)) { readings = readings.filter((x) => x !== rec); return false; }
-  pending = null; lastSaved = rec; viewing = uid;
+  pending = waiting.shift() || null; lastSaved = pending ? null : rec; viewing = uid;
   say('Saved ' + fmt(rec.kg) + ' ' + settings.unit + ' for ' + person(uid).name + '.');
   renderAll();
   return true;
 }
 function renderWho() {
+  // Kept on disk: a weigh-in waiting for a name must survive the app being closed.
+  store.set('scale_unsorted', [pending].concat(waiting).filter(Boolean));
   const w = $('who');
   if (pending) {
-    w.innerHTML = '<p><b>Who is this?</b></p><div class="row">' + people.map((p) => '<button class="p" data-save="' + p.id + '">' + esc(p.name) + '</button>').join('') + '</div>';
+    w.innerHTML = '<p><b>Who is this?</b> ' + fmt(pending.kg) + ' ' + settings.unit + (pending.t ? ', ' + when(pending.t) : '') + (waiting.length ? ' (' + (waiting.length + 1) + ' to sort)' : '') + '</p><div class="row">' + people.map((p) => '<button class="p" data-save="' + p.id + '">' + esc(p.name) + '</button>').join('') + '</div>';
   } else if (lastSaved && person(lastSaved.uid)) {
     const others = people.filter((p) => p.id !== lastSaved.uid);
     w.innerHTML = '<p>Saved for <b>' + esc(person(lastSaved.uid).name) + '</b> at ' + new Date(lastSaved.t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + '.</p><div class="row">' +
@@ -526,17 +540,53 @@ function renderPeople() {
   $('mP').value = viewing;
   $('btnUnit').textContent = 'Set scale screen to ' + (settings.unit === 'lb' ? 'pounds' : 'kilograms');
 }
-function renderAll() { render(); renderPeople(); renderWho(); setLive(current); }
+function renderAll() { render(); renderPeople(); renderWho(); setLive(current); syncNative(); }
+// The service names readings taken with the app closed, so it needs everyone's last weight.
+function syncNative() {
+  if (!native) return;
+  native.sync(JSON.stringify({ unit: settings.unit, auto: settings.auto, people: people.map((p) => {
+    const last = readings.filter((r) => r.uid === p.id).pop();
+    return { id: p.id, name: p.name, lastKg: last ? last.kg : null };
+  }) }));
+}
+// Readings the service took while this screen was closed. It already named the ones it could.
+function pullNative() {
+  if (!native) return;
+  let got = [];
+  try { got = JSON.parse(native.pending() || '[]'); } catch (e) { log('Could not read saved weigh-ins: ' + e.message); return; }
+  const done = [];
+  got = got.filter((r) => {
+    // Already here (an earlier pull got as far as saving but not clearing): just clear it.
+    if (readings.some((x) => x.t === r.t) || (pending && pending.t === r.t) || waiting.some((x) => x.t === r.t)) { done.push(r.t); return false; }
+    return true;
+  });
+  got.forEach((r) => {
+    // Cleared only once saved -- or, for "Who is this?", once it is on screen to be answered.
+    if (r.uid && person(r.uid)) { if (saveFor(r.uid, r, 'scale')) done.push(r.t); } else { ask(r); done.push(r.t); }
+  });
+  if (done.length) native.clearPending(JSON.stringify(done));
+  if (got.length) { renderAll(); say(got.length === 1 ? 'Added 1 weigh-in from while the app was closed.' : 'Added ' + got.length + ' weigh-ins from while the app was closed.'); }
+}
+window.nativeResumed = pullNative;
+window.onNativeFrame = (svc, chr, h) => onData(svc, chr, new DataView(Uint8Array.from(h.split(' ').filter(Boolean).map((x) => parseInt(x, 16))).buffer));
+window.onNativeState = (state, text) => {
+  if (state === 'connected') { sessionSaved = false; connectedUI(true); $('btnUnit').disabled = false; setLive(null); }
+  else if (state !== 'connecting') connectedUI(false);
+  if (text) status(text);
+};
+window.onNativeLog = (s) => log(s);
 
 // ===== 7. BACKUP =====
 const backupText = () => JSON.stringify({ app: 'Scale Log', saved: new Date().toISOString(), people, settings, readings });
 function download(name, text, type) {
+  if (native) { native.share(name, type, text); return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
   document.body.appendChild(a); a.click(); a.remove();
   say('Saved "' + name + '" to this phone\'s Downloads folder.');
 }
 async function shareBackup() {
   const name = 'scale_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+  if (native) { native.share(name, 'application/json', backupText()); return; }
   const file = new File([backupText()], name, { type: 'application/json' });
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: 'Scale Log backup' }); return; }
@@ -564,10 +614,10 @@ document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click
 }));
 $('btnConnect').onclick = connect;
 $('btnPick').onclick = pick;
-$('btnDisconnect').onclick = () => { if (dev) { if (dev.unwatchAdvertisements) try { dev.unwatchAdvertisements(); } catch (e) { /* not watching */ } dev.ongattserverdisconnected = null; if (dev.gatt.connected) dev.gatt.disconnect(); } writeChar = null; connectedUI(false); status('Disconnected.'); };
+$('btnDisconnect').onclick = () => { if (native) { native.disconnect(); return; } if (dev) { if (dev.unwatchAdvertisements) try { dev.unwatchAdvertisements(); } catch (e) { /* not watching */ } dev.ongattserverdisconnected = null; if (dev.gatt.connected) dev.gatt.disconnect(); } writeChar = null; connectedUI(false); status('Disconnected.'); };
 $('btnUnit').onclick = async () => {
   const name = settings.unit === 'lb' ? 'pounds' : 'kilograms';
-  if (await send(unitFrame(settings.unit))) say('Told the scale to show ' + name + '. Step off, then step back on to see it.');
+  if (native ? native.sendUnit(settings.unit) : await send(unitFrame(settings.unit))) say('Told the scale to show ' + name + '. Step off, then step back on to see it.');
   else say('Could not reach the scale. Step on it to wake it, press Connect to scale, then try again.', true);
 };
 $('btnManual').onclick = () => {
@@ -622,20 +672,23 @@ $('btnDelPerson').onclick = () => {
   editing = people[0].id; if (viewing === p.id) viewing = people[0].id;
   renderAll();
 };
-$('btnCopy').onclick = async () => { try { await navigator.clipboard.writeText(logLines.join('\n')); say('Log copied.'); } catch (e) { say('Could not copy. Select the text and copy it by hand.', true); } };
+$('btnCopy').onclick = async () => { if (native) { native.copy(logLines.join('\n')); say('Log copied.'); return; } try { await navigator.clipboard.writeText(logLines.join('\n')); say('Log copied.'); } catch (e) { say('Could not copy. Select the text and copy it by hand.', true); } };
 $('btnClear').onclick = () => { logLines.length = 0; $('rawlog').textContent = 'Nothing yet.'; };
 
 $('sUnit').value = settings.unit; $('sAuto').checked = settings.auto;
-$('support').hidden = !!navigator.bluetooth;
+$('support').hidden = !!(native || navigator.bluetooth);
 $('support').innerHTML = '<b>This browser cannot talk to the scale.</b><p class="mute">Open this app in <b>Chrome on Android</b> or Chrome/Edge on a computer. iPhones need the free <b>Bluefy</b> browser. You can still type readings in below.</p>';
-if (!navigator.bluetooth) { $('btnConnect').disabled = true; $('btnPick').disabled = true; }
+if (!native && !navigator.bluetooth) { $('btnConnect').disabled = true; $('btnPick').disabled = true; }
+if (native) { $('btnPick').textContent = 'Pair a different scale'; status(native.isPaired() ? 'Step on the scale. It connects and saves on its own, even with this app closed.' : 'Step on the scale to wake it, then press Connect to scale to pair it.'); }
+store.get('scale_unsorted', []).forEach((r) => { if (r && r.kg > 0) { if (pending) waiting.push(r); else pending = r; } });
 renderAll();
+pullNative();
 // Already paired once and Chrome allows it: start listening straight away, so opening the
 // app and stepping on the scale is all it takes.
-if (navigator.bluetooth) knownDevice().then((d) => { if (d) { hookDevice(d); waitForScale(d); } });
+if (!native && navigator.bluetooth) knownDevice().then((d) => { if (d) { hookDevice(d); waitForScale(d); } });
 // Lets Chrome offer "Install app" and keeps it opening offline. Only over https -- opened as a
 // plain file there is nothing to register against, and that is fine.
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if (!native && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>

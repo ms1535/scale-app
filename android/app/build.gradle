@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The screens are the web app at the repo root -- one copy of them, not two. They are copied
+// into the APK's assets at build time and served to the WebView from there, so the Android
+// app works with no signal exactly like the web one.
+def webOut = layout.buildDirectory.dir('generated/web')
+def copyWeb = tasks.register('copyWeb', Copy) {
+    from(rootProject.file('..')) {
+        include 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png'
+    }
+    into webOut.map { it.dir('web') }
+}
+
+def run = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+android {
+    namespace 'com.ms1535.scalelog'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.ms1535.scalelog'
+        minSdk 26
+        // 34, not 35: 35 forces edge-to-edge, which would put the page under the status bar.
+        targetSdk 34
+        versionCode run
+        versionName "1.0.${run}"
+    }
+
+    // Android only installs an update over an app signed with the same key, so every build
+    // must use one fixed key -- or each update means uninstalling and losing every reading.
+    // The key is a GitHub secret (see the workflow), never in this public repo. Without it the
+    // build still works, signed with a throwaway key: fine to try, not to keep using.
+    def ks = System.getenv('SCALELOG_KEYSTORE')
+    signingConfigs {
+        shared {
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('SCALELOG_KEY_PASSWORD')
+                keyAlias 'scalelog'
+                keyPassword System.getenv('SCALELOG_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.shared : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    sourceSets {
+        main.assets.srcDirs += webOut
+    }
+    lint {
+        // The Bluetooth calls are guarded by runtime permission checks lint cannot follow.
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+tasks.named('preBuild') { dependsOn copyWeb }
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'
+}

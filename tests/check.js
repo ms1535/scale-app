@@ -133,6 +133,69 @@ const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('sc
   check(up.people.length === 1 && up.people[0].ht === 70 && up.r[0].uid === 'p1', 'upgrading keeps the old profile and readings');
   const n2 = await p2.evaluate(() => restore({ readings: [{ t: 1761000000000, kg: 100 }, { t: 1761100000000, kg: 99 }] }));
   check(n2 === 1, 'restoring an old backup adds only what is new');
+  // --- inside the Android app: a fake NativeScale stands in for the phone side ---
+  const ctx3 = await browser.newContext();
+  await ctx3.addInitScript(() => {
+    const calls = window.__calls = { sync: [], cleared: [], share: [], unit: [] };
+    let queue = [];
+    window.__setPending = (a) => { queue = a; };
+    window.NativeScale = {
+      isPaired: () => true, pair() {}, connect() {}, disconnect() {},
+      sendUnit: (u) => { calls.unit.push(u); return true; },
+      sync: (j) => calls.sync.push(JSON.parse(j)),
+      pending: () => JSON.stringify(queue),
+      clearPending: (j) => { const ts = JSON.parse(j); calls.cleared.push(...ts); queue = queue.filter((r) => !ts.includes(r.t)); },
+      share: (name, type, text) => calls.share.push({ name, type, len: text.length }),
+      copy() {},
+    };
+  });
+  const p3 = await ctx3.newPage();
+  p3.on('pageerror', (e) => errors.push(e.message));
+  p3.on('dialog', (d) => d.accept());
+  await p3.goto(URL_);
+  check(await p3.isHidden('#support'), 'app mode: no "this browser cannot talk to the scale" warning');
+  // Two people, so the closed-app weigh-ins can be named or not.
+  await p3.evaluate(() => {
+    people.push({ id: 'p2', name: 'Wife', sex: 'f', age: 38, ht: 64, goal: null });
+    readings.push({ t: 1, uid: 'p1', kg: 106 }, { t: 2, uid: 'p2', kg: 63.5 });
+    store.set('scale_people', people); store.set('scale_readings', readings); renderAll();
+  });
+  const snap = await p3.evaluate(() => __calls.sync.pop());
+  check(snap.people.length === 2 && snap.people[1].lastKg === 63.5 && snap.unit === 'lb', 'app mode: sends people and last weights to the service');
+  await p3.evaluate(() => {
+    __setPending([
+      { t: 1761900000000, kg: 106.2, ohms: 469, ohms2: 395, uid: 'p1', src: 'scale' },
+      { t: 1761900600000, kg: 85, ohms: 500, ohms2: 420, uid: null, src: 'scale' },
+      { t: 1761901200000, kg: 90, ohms: 500, ohms2: 420, uid: null, src: 'scale' },
+    ]);
+    nativeResumed();
+  });
+  let st = await p3.evaluate(() => ({ r: JSON.parse(localStorage.getItem('scale_readings')), cleared: __calls.cleared, who: document.getElementById('who').textContent }));
+  check(st.r.some((x) => x.t === 1761900000000 && x.uid === 'p1' && x.ohms === 469), 'app mode: a named closed-app weigh-in is saved with its own time');
+  check(st.cleared.length === 3, 'app mode: the service is told to drop only what the page has kept');
+  check(/Who is this\?/.test(st.who) && /2 to sort/.test(st.who), 'app mode: unnamed weigh-ins queue up as "Who is this?"');
+  // Closing the app before answering must not lose them.
+  await p3.reload();
+  check(/2 to sort/.test(await p3.textContent('#who')), 'an unanswered "Who is this?" survives closing the app');
+  await p3.click('#who [data-save=p2]');
+  check(/Who is this\?/.test(await p3.textContent('#who')), 'after one answer the next one is asked');
+  await p3.click('#who [data-save=p1]');
+  st = await p3.evaluate(() => JSON.parse(localStorage.getItem('scale_readings')));
+  check(st.find((x) => x.t === 1761900600000).uid === 'p2' && st.find((x) => x.t === 1761901200000).uid === 'p1', 'answering the queue files each one, in order');
+  // Put Michael's latest back near 106 kg so the live reading below is his.
+  await p3.evaluate(() => { readings.push({ t: 1761901800000, uid: 'p1', kg: 106.1 }); store.set('scale_readings', readings); });
+  // Live frames from the service, as when the app is open.
+  const before = st.length + 1;   // + the 106.1 kg reading added just above
+  await p3.evaluate((f) => { onNativeState('connected', 'Connected.'); f.forEach((h) => onNativeFrame('0000ffe0-0000-1000-8000-00805f9b34fb', '0000ffe1-0000-1000-8000-00805f9b34fb', h)); },
+    ['14 0b 15 00 00 01 00 00 00 00 35', REAL.settling, REAL.steady, REAL.steady]);
+  st = await p3.evaluate(() => JSON.parse(localStorage.getItem('scale_readings')));
+  check(st.length === before + 1 && st[st.length - 1].uid === 'p1', 'app mode: live frames from the service save once, to the right person');
+  await p3.click('#btnUnit');
+  await p3.click('[data-tab=history]');
+  await p3.click('#btnShare');
+  const c3 = await p3.evaluate(() => __calls);
+  check(c3.unit[0] === 'lb' && c3.share[0] && /scale_backup_.*\.json/.test(c3.share[0].name), 'app mode: unit button and backup go through the app');
+
   check(errors.length === 0, 'no page errors along the way ' + JSON.stringify(errors));
 
   await browser.close();

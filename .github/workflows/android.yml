@@ -1,0 +1,65 @@
+# Builds the Android app and publishes it as a GitHub release, so the newest APK is always at
+#   https://github.com/ms1535/scale-app/releases/latest/download/ScaleLog.apk
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'index.html', 'manifest.webmanifest', 'icon-*.png', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.3'
+
+      # The signing key lives in two repo secrets (Settings > Secrets and variables > Actions):
+      #   SCALELOG_KEYSTORE_B64  the keystore, base64
+      #   SCALELOG_KEY_PASSWORD  its password
+      # Without them the APK is signed with a throwaway key and published as a pre-release.
+      - name: Signing key
+        env:
+          KEY: ${{ secrets.SCALELOG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "$KEY" | base64 -d > "$RUNNER_TEMP/scalelog.keystore"
+            echo "SCALELOG_KEYSTORE=$RUNNER_TEMP/scalelog.keystore" >> "$GITHUB_ENV"
+            echo "SIGNED=1" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing key secret. This APK uses a throwaway key and cannot be updated in place."
+          fi
+
+      - name: Build
+        env:
+          SCALELOG_KEY_PASSWORD: ${{ secrets.SCALELOG_KEY_PASSWORD }}
+        run: gradle --no-daemon -p android assembleRelease
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk ScaleLog.apk
+          if [ -n "$SIGNED" ]; then
+            gh release create "android-${{ github.run_number }}" ScaleLog.apk \
+              --title "Scale Log for Android, build ${{ github.run_number }}" \
+              --notes "Install: open this on the phone and tap ScaleLog.apk. Built from ${{ github.sha }}." \
+              --latest
+          else
+            gh release create "android-test-${{ github.run_number }}" ScaleLog.apk \
+              --title "Scale Log for Android, TEST build ${{ github.run_number }} (throwaway key)" \
+              --notes "Test build: signed with a throwaway key, so the next build will not install over it. Built from ${{ github.sha }}." \
+              --prerelease
+          fi
