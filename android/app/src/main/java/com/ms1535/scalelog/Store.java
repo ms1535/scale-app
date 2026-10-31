@@ -80,6 +80,26 @@ final class Store {
         } catch (JSONException ignored) { }
     }
 
+    /**
+     * The scale keeps advertising for a while after we let go of it, and that can wake the app
+     * again while the same person is still standing there. The same weight within a minute is
+     * the same weigh-in, not a new one.
+     */
+    static synchronized boolean isRepeat(Context c, double kg) {
+        long t = p(c).getLong("lastSaveAt", 0);
+        double w = Double.longBitsToDouble(p(c).getLong("lastSaveKg", 0));
+        return System.currentTimeMillis() - t < 60_000 && Math.abs(w - kg) < 0.3;
+    }
+
+    static synchronized void noteSave(Context c, double kg) {
+        p(c).edit().putLong("lastSaveAt", System.currentTimeMillis()).putLong("lastSaveKg", Double.doubleToLongBits(kg)).commit();
+    }
+
+    /** Just saved in the background: don't reconnect to the still-awake scale straight away. */
+    static boolean coolingDown(Context c) {
+        return System.currentTimeMillis() - p(c).getLong("lastSaveAt", 0) < 10_000;
+    }
+
     static synchronized void addPending(Context c, JSONObject r) {
         JSONArray a;
         try { a = new JSONArray(p(c).getString("pending", "[]")); } catch (JSONException e) { a = new JSONArray(); }

@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1f5fbf">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Build 2026-10-31.5 -->
+<!-- Build 2026-10-31.6 -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a;--avg:#c76b00}
 @media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c;--avg:#ffb054}}
@@ -59,7 +59,7 @@ svg{width:100%;height:auto;display:block}
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.5</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.6</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
@@ -413,6 +413,9 @@ async function send(arr) {
 // ===== 5. SAVING =====
 function onSteady(r) {
   sessionSaved = true;
+  // Reconnecting to a scale that is still awake replays the same steady reading. The same
+  // weight within a minute is the same weigh-in, not a second one.
+  if (lastSaved && Date.now() - lastSaved.t < 60000 && Math.abs(lastSaved.kg - r.kg) < 0.3) return;
   const uid = settings.auto ? guessPerson(r.kg) : null;
   if (uid) saveFor(uid, r, 'scale');
   else ask(r);

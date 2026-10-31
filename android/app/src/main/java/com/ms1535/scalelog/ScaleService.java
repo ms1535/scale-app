@@ -51,6 +51,9 @@ public class ScaleService extends Service {
 
     static void start(Context c, String address) {
         if (address == null || active()) return;
+        // The app on screen may connect again (a second person stepping on); in the background,
+        // a wake-up seconds after a save is the same scale still advertising.
+        if (!MainActivity.isVisible() && Store.coolingDown(c)) return;
         if (!Perms.bluetooth(c)) { MainActivity.log("No Bluetooth permission; cannot read the scale."); return; }
         Intent i = new Intent(c, ScaleService.class).putExtra(EXTRA_ADDRESS, address);
         try {
@@ -255,6 +258,7 @@ public class ScaleService extends Service {
         if (!r.stable || saved) return;
         saved = true;
         if (onScreen) return;                                     // the page saves it
+        if (Store.isRepeat(this, r.kg)) { h.postDelayed(this::finish, 500); return; }
         saveInBackground(r);
         // Got what we came for. Let go so the scale can sleep and the next person can wake it.
         h.postDelayed(this::finish, 1500);
@@ -275,6 +279,7 @@ public class ScaleService extends Service {
             MainActivity.log("Could not save: " + e);
             return;
         }
+        Store.noteSave(this, r.kg);
         if (uid != null) Store.noteWeight(this, uid, r.kg);
         String w = Store.weight(this, r.kg);
         Notes.saved(this, uid != null

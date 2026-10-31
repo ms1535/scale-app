@@ -67,7 +67,10 @@ const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('sc
   check(/Saved for/.test(await page.textContent('#who')), 'says who it was saved for');
   check(/Muscle/.test(await page.textContent('#breakdown')) === false, 'no breakdown numbers until height and age are set');
   await feed(page, [OFF, REAL.steady]);
-  check((await stored(page)).length === 2, 'stepping off and back on saves again');
+  check((await stored(page)).length === 1, 'the same weight again within a minute is the same weigh-in (scale reconnect)');
+  await page.evaluate(() => { lastSaved.t -= 61000; });
+  await feed(page, [OFF, REAL.steady]);
+  check((await stored(page)).length === 2, 'stepping off and back on later saves again');
   await page.click('#who [data-undo]');
   check((await stored(page)).length === 1, '"Don\'t keep it" removes the reading');
 

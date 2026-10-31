@@ -65,6 +65,8 @@ public class MainActivity extends Activity {
 
     // ----- called from ScaleService; safe when the screen is closed -----
 
+    static boolean isVisible() { return visible; }
+
     /** Hands a frame to the page. False when nobody is looking, so the service saves it itself. */
     static boolean frame(String svc, String chr, String hex) {
         MainActivity a = current;
