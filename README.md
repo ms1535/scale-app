@@ -4,7 +4,34 @@ An app for the **Multifun MF-BS2** body composition scale, made because the vend
 
 **Open it:** https://ms1535.github.io/scale-app/
 
-## Android setup (one time)
+## Android app (weighs in with the app closed)
+
+The Android app does everything the web app does, and also reads the scale **with the app
+closed**: step on, and a notification says *Saved 234.4 lb for Michael*. The phone only has
+to be within Bluetooth range (about 30 ft).
+
+**Install:** on the phone, open
+https://github.com/ms1535/scale-app/releases/latest/download/ScaleLog.apk
+and tap the downloaded file. Android warns about apps from outside the Play Store; allow it
+for Chrome (or Files) once.
+
+**First run:**
+1. Allow **Nearby devices** and **Notifications** when asked. Both are needed.
+2. **People** tab: set everyone up (name, age, height, goal).
+3. **Weigh in** tab: step on the scale to wake it, press **Connect to scale**, and choose
+   **QN-Scale** on Android's pairing screen. That pairing is what lets Android wake the app
+   when the scale wakes.
+4. Close the app. Next time, just step on the scale.
+
+Readings from the web app don't move over by themselves: in the web app, **History → Send
+backup**, then in the Android app **History → Restore from backup file**.
+
+How it works: `android/` wraps the same `index.html`. Pairing uses Android's companion-device
+screen, so Android watches for the scale in the background and starts a short service when it
+wakes; the service saves the reading, or hands frames to the page when it is open. Built by
+GitHub Actions (`.github/workflows/android.yml`); the signing key is in repo secrets, not here.
+
+## Android setup without the app (Chrome, one time)
 
 1. Open the link in Chrome and tap **Install** (or **⋮ → Install app**). It then opens full screen from its own icon and works with no signal.
 2. **People** tab: fill in your name, age, height and optional goal, and press **Save person**. Press **+ Add person** for anyone else who uses the scale.
