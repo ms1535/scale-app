@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1f5fbf">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Build 2026-10-31.6 -->
+<!-- Build 2026-11-02.7 -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a;--avg:#c76b00}
 @media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c;--avg:#ffb054}}
@@ -59,7 +59,7 @@ svg{width:100%;height:auto;display:block}
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-10-31.6</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-11-02.7</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
@@ -255,6 +255,21 @@ if (!people) {
   store.set('scale_people', people); store.set('scale_settings', settings); store.set('scale_readings', readings);
 }
 settings = Object.assign({ unit: 'lb', auto: true, deviceId: null }, settings);
+// Two copies of the app can be open at once -- the installed icon left in recent apps and the
+// link opened again in Chrome. Each keeps its own copy of the history in memory, and every save
+// writes the whole list back, so an older copy saving would wipe whatever the other one saved
+// since it opened. That lost a day of Michael's readings (2026-11). So: every change re-reads
+// storage first and applies itself to that, never to what this copy remembers; and the screen
+// refreshes when another copy writes or when it comes back into view.
+function reload() {
+  readings = store.get('scale_readings', readings);
+  people = store.get('scale_people', people);
+  settings = Object.assign({ unit: 'lb', auto: true, deviceId: null }, store.get('scale_settings', settings));
+  if (typeof waiting !== 'undefined') {
+    const uns = store.get('scale_unsorted', []).filter((r) => r && r.kg > 0);
+    pending = uns.shift() || null; waiting.length = 0; waiting.push(...uns);
+  }
+}
 const person = (id) => people.find((p) => p.id === id);
 const toUnit = (kg) => settings.unit === 'lb' ? kg / KG_PER_LB : kg;
 const fromUnit = (v) => settings.unit === 'lb' ? v * KG_PER_LB : v;
@@ -421,15 +436,21 @@ function onSteady(r) {
   else ask(r);
 }
 function ask(r) {
+  // Stamped now: the time of the weigh-in, and how a queued one is told apart from the rest.
+  if (!r.t) r = Object.assign({}, r, { t: Date.now() });
   if (pending) waiting.push(r); else { pending = r; lastSaved = null; }
   renderWho();
 }
 function saveFor(uid, r, src) {
+  reload();
+  if (r.t && readings.some((x) => x.t === r.t)) return true;   // already saved by another copy
   const rec = { t: r.t || Date.now(), uid, kg: +r.kg.toFixed(3), ohms: r.ohms || null, ohms2: r.ohms2 || null, src };
   readings.push(rec);
   readings.sort((a, b) => a.t - b.t);
   if (!store.set('scale_readings', readings)) { readings = readings.filter((x) => x !== rec); return false; }
-  pending = waiting.shift() || null; lastSaved = pending ? null : rec; viewing = uid;
+  // The "Who is this?" queue is moved on by whoever answered it, not here: an automatic save
+  // used to advance it too, silently dropping the weigh-in that was waiting for a name.
+  lastSaved = rec; viewing = uid;
   say('Saved ' + fmt(rec.kg) + ' ' + settings.unit + ' for ' + person(uid).name + '.');
   renderAll();
   return true;
@@ -450,9 +471,24 @@ function renderWho() {
 }
 $('who').onclick = (e) => {
   const b = e.target.closest('button'); if (!b) return;
-  if (b.dataset.save && pending) saveFor(b.dataset.save, pending, 'scale');
-  else if (b.dataset.move && lastSaved) { lastSaved.uid = b.dataset.move; viewing = lastSaved.uid; store.set('scale_readings', readings); say('Moved to ' + person(lastSaved.uid).name + '.'); renderAll(); }
-  else if (b.dataset.undo && lastSaved) { readings = readings.filter((r) => r !== lastSaved); lastSaved = null; store.set('scale_readings', readings); say('Reading removed.'); renderAll(); }
+  if (b.dataset.save && pending) {
+    const r = pending;
+    saveFor(b.dataset.save, r, 'scale');
+    // saveFor re-read the queue from storage; drop the one just answered, wherever it sits.
+    if (pending && pending.t === r.t) pending = waiting.shift() || null;
+    for (let i = waiting.length - 1; i >= 0; i--) if (waiting[i].t === r.t) waiting.splice(i, 1);
+    renderWho();
+  }
+  else if (b.dataset.move && lastSaved) {
+    reload();
+    const rec = readings.find((x) => x.t === lastSaved.t);
+    if (rec) { rec.uid = b.dataset.move; store.set('scale_readings', readings); lastSaved = rec; viewing = rec.uid; say('Moved to ' + person(rec.uid).name + '.'); }
+    renderAll();
+  }
+  else if (b.dataset.undo && lastSaved) {
+    reload();
+    readings = readings.filter((x) => x.t !== lastSaved.t); lastSaved = null; store.set('scale_readings', readings); say('Reading removed.'); renderAll();
+  }
 };
 
 function breakdownHTML(r) {
@@ -570,7 +606,9 @@ function pullNative() {
   if (done.length) native.clearPending(JSON.stringify(done));
   if (got.length) { renderAll(); say(got.length === 1 ? 'Added 1 weigh-in from while the app was closed.' : 'Added ' + got.length + ' weigh-ins from while the app was closed.'); }
 }
-window.nativeResumed = pullNative;
+window.nativeResumed = () => { reload(); renderAll(); pullNative(); };
+window.addEventListener('storage', (e) => { if (e.key && e.key.startsWith('scale_')) { reload(); renderAll(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { reload(); renderAll(); } });
 window.onNativeFrame = (svc, chr, h) => onData(svc, chr, new DataView(Uint8Array.from(h.split(' ').filter(Boolean).map((x) => parseInt(x, 16))).buffer));
 window.onNativeState = (state, text) => {
   if (state === 'connected') { sessionSaved = false; connectedUI(true); $('btnUnit').disabled = false; setLive(null); }
@@ -599,6 +637,7 @@ async function shareBackup() {
 }
 function restore(d) {
   if (!Array.isArray(d.readings)) throw new Error('not a Scale Log backup');
+  reload();
   // Older backups have no people: their readings belong to whoever is first here.
   (d.people || []).forEach((p) => { if (p && p.id && !person(p.id)) people.push(p); });
   const key = (r) => r.t + '|' + (r.uid || people[0].id);
@@ -632,7 +671,7 @@ $('hRange').onclick = (e) => { const b = e.target.closest('[data-days]'); if (b)
 $('tbl').onclick = (e) => {
   const del = e.target.dataset.del;
   if (del) {
-    if (confirm('Delete this reading?')) { readings = readings.filter((r) => !(String(r.t) === del && r.uid === viewing)); store.set('scale_readings', readings); $('detail').hidden = true; render(); }
+    if (confirm('Delete this reading?')) { reload(); readings = readings.filter((r) => !(String(r.t) === del && r.uid === viewing)); store.set('scale_readings', readings); $('detail').hidden = true; render(); }
     return;
   }
   const tr = e.target.closest('tr[data-t]'); if (!tr) return;
@@ -654,6 +693,7 @@ $('fileImport').onchange = async (e) => {
   e.target.value = '';
 };
 $('btnSettings').onclick = () => {
+  reload();
   settings.unit = $('sUnit').value; settings.auto = $('sAuto').checked;
   if (store.set('scale_settings', settings)) { say('Settings saved.' + (writeChar ? '' : ' Connect to the scale and press "Set scale screen" to change its screen too.')); renderAll(); }
 };
@@ -661,16 +701,20 @@ $('pList').onclick = (e) => { const b = e.target.closest('[data-edit]'); if (b) 
 $('btnPerson').onclick = () => {
   const name = $('pName').value.trim(); if (!name) { say('Type a name first.', true); return; }
   const g = parseFloat($('pGoal').value);
+  reload();
   const p = { id: editing === 'new' ? 'p' + Date.now() : editing, name, sex: $('pSex').value, age: parseFloat($('pAge').value) || '', ht: parseFloat($('pHt').value) || '', goal: g > 0 ? fromUnit(g) : null };
-  if (editing === 'new') people.push(p); else people[people.findIndex((x) => x.id === editing)] = p;
+  const at = people.findIndex((x) => x.id === editing);
+  if (editing === 'new' || at < 0) people.push(p); else people[at] = p;
   editing = p.id;
   if (store.set('scale_people', people)) { say('Saved ' + name + '.'); renderAll(); }
 };
 $('btnDelPerson').onclick = () => {
+  reload();
   const p = person(editing); if (!p || people.length < 2) return;
   const n = readings.filter((r) => r.uid === p.id).length;
   if (!confirm('Delete ' + p.name + ' and their ' + n + ' readings? This cannot be undone.')) return;
-  people = people.filter((x) => x !== p); readings = readings.filter((r) => r.uid !== p.id);
+  reload();
+  people = people.filter((x) => x.id !== p.id); readings = readings.filter((r) => r.uid !== p.id);
   store.set('scale_people', people); store.set('scale_readings', readings);
   editing = people[0].id; if (viewing === p.id) viewing = people[0].id;
   renderAll();

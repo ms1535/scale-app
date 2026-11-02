@@ -136,6 +136,42 @@ const stored = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('sc
   check(up.people.length === 1 && up.people[0].ht === 70 && up.r[0].uid === 'p1', 'upgrading keeps the old profile and readings');
   const n2 = await p2.evaluate(() => restore({ readings: [{ t: 1761000000000, kg: 100 }, { t: 1761100000000, kg: 99 }] }));
   check(n2 === 1, 'restoring an old backup adds only what is new');
+  // --- two copies open at once (2026-11: lost a day of readings) ---
+  // The installed icon left in recent apps plus the link opened again in Chrome. The older copy
+  // saving used to write back its stale list and wipe what the other had saved.
+  const ctx2 = await browser.newContext();
+  const a1 = await ctx2.newPage(), a2 = await ctx2.newPage();
+  for (const pg of [a1, a2]) { pg.on('pageerror', (e) => errors.push(e.message)); pg.on('dialog', (d) => d.accept()); }
+  await a1.goto(URL_);
+  await a1.evaluate(() => { localStorage.clear(); });
+  await a1.reload(); await a2.goto(URL_);            // both open, both with an empty history
+  await a1.fill('#mW', '200'); await a1.click('#btnManual');
+  await a2.fill('#mW', '201'); await a2.click('#btnManual');   // a2 never saw a1's reading
+  let both = await stored(a1);
+  check(both.length === 2, 'a second copy of the app saving does not wipe the first copy\'s reading');
+  await a2.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));   // as when switching back to it
+  await a2.click('[data-tab=history]');
+  check((await a2.$$('#tbl tr[data-t]')).length === 2, 'each copy shows both readings');
+  // Deleting in one copy must stick even though the other still remembers the reading.
+  await a1.click('[data-tab=history]');
+  await a1.click('#tbl tr[data-t] button[data-del]');
+  await a2.click('[data-tab=weigh]'); await a2.fill('#mW', '202'); await a2.click('#btnManual');
+  both = await stored(a1);
+  check(both.length === 2 && both.some((r) => Math.abs(r.kg - 202 * 0.45359237) < 0.01), 'a delete in one copy is not undone by the other copy saving');
+
+  // --- a "Who is this?" waiting while someone else's reading saves itself ---
+  await a1.reload();
+  await a1.evaluate(() => {
+    people.push({ id: 'pw', name: 'Wife', sex: 'f', age: 38, ht: 64, goal: null });
+    readings.push({ t: 10, uid: 'p1', kg: 106 }, { t: 11, uid: 'pw', kg: 63 });
+    store.set('scale_people', people); store.set('scale_readings', readings); renderAll();
+  });
+  await feed(a1, [OFF, steadyAt(85)]);               // nobody near: asks
+  await feed(a1, [OFF, steadyAt(106.2)]);            // Michael steps on before anyone answers
+  const w = await a1.textContent('#who');
+  check(/Who is this\?/.test(w) && (await stored(a1)).some((r) => r.uid === 'p1' && Math.abs(r.kg - 106.2) < 0.01), 'an automatic save does not throw away a weigh-in still waiting for a name');
+  await ctx2.close();
+
   // --- inside the Android app: a fake NativeScale stands in for the phone side ---
   const ctx3 = await browser.newContext();
   await ctx3.addInitScript(() => {
