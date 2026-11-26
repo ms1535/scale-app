@@ -18,6 +18,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.res.Configuration;
 import android.net.MacAddress;
 import android.net.Uri;
 import android.os.Build;
@@ -96,6 +97,8 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         current = this;
         web = new WebView(this);
+        boolean night = (getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+        web.setBackgroundColor(night ? 0xFF101216 : 0xFFF4F5F7);
         setContentView(web);
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -104,6 +107,7 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(false);
         // The Cardio tab reaches Erg Bridge over plain http/ws on the local network.
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        if (Build.VERSION.SDK_INT >= 33) s.setAlgorithmicDarkeningAllowed(true);
         web.setWebViewClient(new WebViewClient() {
             @Override public WebResourceResponse shouldInterceptRequest(WebView v, WebResourceRequest r) {
                 return serve(r.getUrl());
