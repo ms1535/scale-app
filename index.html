@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1f5fbf">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
-<!-- Build 2026-11-02.7 -->
+<!-- Build 2026-11-26.1 -->
 <style>
 :root{--bg:#f4f5f7;--card:#fff;--ink:#16181d;--mute:#5c6370;--line:#d9dce2;--acc:#1f5fbf;--accink:#fff;--bad:#b3261e;--ok:#1e7d3a;--avg:#c76b00}
 @media (prefers-color-scheme:dark){:root{--bg:#101216;--card:#1a1d23;--ink:#eceef2;--mute:#9aa1ad;--line:#2d323b;--acc:#5b9bff;--accink:#08111f;--bad:#ff8a80;--ok:#6fd58c;--avg:#ffb054}}
@@ -54,15 +54,23 @@ svg{width:100%;height:auto;display:block}
 .bar{height:10px;background:var(--bg);border-radius:5px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--ok)}
 .key{display:inline-flex;align-items:center;gap:4px;margin-right:12px;font-size:13px;color:var(--mute)}
 .key i{display:inline-block;width:14px;height:3px;border-radius:2px}
+.cbadge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--line);color:var(--mute)}
+.cbadge.ROWER{border-color:var(--acc);color:var(--acc)}
+.cbadge.BIKE{border-color:var(--avg);color:var(--avg)}
+.cbadge.BOTH{border-color:var(--ok);color:var(--ok)}
+.cdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--bad);margin-right:5px;vertical-align:middle}
+.cdot.on{background:var(--ok)}
+.chr{color:var(--bad)}
 </style>
 </head>
 <body>
 <main>
 <h1>Scale Log</h1>
-<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-11-02.7</p>
+<p class="sub">For the Multifun MF-BS2 body composition scale &middot; works offline &middot; Build 2026-11-26.1</p>
 
 <nav role="tablist">
   <button role="tab" data-tab="weigh" aria-selected="true">Weigh in</button>
+  <button role="tab" data-tab="cardio" aria-selected="false">Cardio</button>
   <button role="tab" data-tab="history" aria-selected="false">History</button>
   <button role="tab" data-tab="people" aria-selected="false">People</button>
   <button role="tab" data-tab="log" aria-selected="false">Raw log</button>
@@ -93,6 +101,60 @@ svg{width:100%;height:auto;display:block}
       <div><label for="mR">Impedance (ohms), optional</label><input id="mR" type="number" step="1" inputmode="numeric"></div>
     </div>
     <div class="row"><button class="s" id="btnManual">Save typed reading</button></div>
+  </div>
+</section>
+
+<section id="cardio">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+      <h2 style="margin:0">Erg Bridge Live</h2>
+      <span id="cBadge" class="cbadge">OFFLINE</span>
+    </div>
+    <div class="grid">
+      <div><label for="cPerson">Who</label><select id="cPerson"></select></div>
+      <div><label for="cUrl">Erg Bridge URL</label><input id="cUrl" placeholder="http://192.168.1.50:8000" autocomplete="off"></div>
+    </div>
+    <div class="row">
+      <button class="p" id="btnErgConn">Connect to Erg Bridge</button>
+      <button class="s" id="btnErgDisc" disabled>Disconnect</button>
+    </div>
+    <p class="mute" id="cStatus" style="margin:8px 0 0">Run <code>python app.py --mock</code> (or <code>--live</code>) on your PC, then press Connect.</p>
+  </div>
+
+  <div class="card">
+    <div class="grid">
+      <div class="stat"><span>Elapsed</span><b id="cElapsed">00:00</b></div>
+      <div class="stat"><span><i id="cHrDot" class="cdot"></i>Heart Rate</span><b id="cHr" class="chr">&mdash;</b><span id="cHrMeta">Avg &mdash; / Max &mdash;</span></div>
+      <div class="stat"><span>Combined Watts</span><b id="cWatts">0 W</b><span id="cWkg">&mdash; W/kg</span></div>
+      <div class="stat"><span>Combined Cals</span><b id="cCals">0.0</b><span id="cAvgW">Avg 0 W</span></div>
+    </div>
+    <div class="grid" style="margin-top:8px">
+      <div class="stat">
+        <span><i id="cRDot" class="cdot"></i>Concept2 PM5</span>
+        <b id="cRWatts">0 W</b>
+        <span id="cRMeta">--:-- /500m &middot; 0 spm &middot; 0m</span>
+      </div>
+      <div class="stat">
+        <span><i id="cBDot" class="cdot"></i>Blitz Air Bike</span>
+        <b id="cBWatts">0 W</b>
+        <span id="cBMeta">0 rpm &middot; 0.0 cal</span>
+      </div>
+    </div>
+    <div class="row">
+      <button class="p" id="btnErgStart" disabled>Start</button>
+      <button class="s" id="btnErgPause" disabled>Pause</button>
+      <button class="p" id="btnErgSave" disabled>Save workout</button>
+      <button class="s" id="btnErgReset" disabled>Reset</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cardio History</h2>
+    <table id="cTbl"></table>
+    <p class="mute" id="cNone">No cardio workouts saved yet.</p>
+    <div class="row">
+      <button class="s" id="btnCardioCsv">Save cardio history (CSV)</button>
+    </div>
   </div>
 </section>
 
@@ -243,6 +305,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { say('Could not save on this phone (' + e.message + '). Send a backup now from the History tab.', true); return false; } },
 };
 let readings = store.get('scale_readings', []);
+let workouts = store.get('scale_workouts', []);
 let people = store.get('scale_people', null);
 let settings = store.get('scale_settings', null);
 // Builds .1-.3 had one profile and no people. Turn that profile into the first person and
@@ -263,6 +326,7 @@ settings = Object.assign({ unit: 'lb', auto: true, deviceId: null }, settings);
 // refreshes when another copy writes or when it comes back into view.
 function reload() {
   readings = store.get('scale_readings', readings);
+  workouts = store.get('scale_workouts', workouts);
   people = store.get('scale_people', people);
   settings = Object.assign({ unit: 'lb', auto: true, deviceId: null }, store.get('scale_settings', settings));
   if (typeof waiting !== 'undefined') {
@@ -579,7 +643,7 @@ function renderPeople() {
   $('mP').value = viewing;
   $('btnUnit').textContent = 'Set scale screen to ' + (settings.unit === 'lb' ? 'pounds' : 'kilograms');
 }
-function renderAll() { render(); renderPeople(); renderWho(); setLive(current); syncNative(); }
+function renderAll() { render(); renderPeople(); renderWho(); if (typeof renderCardio === 'function') renderCardio(); setLive(current); syncNative(); }
 // The service names readings taken with the app closed, so it needs everyone's last weight.
 function syncNative() {
   if (!native) return;
@@ -618,7 +682,7 @@ window.onNativeState = (state, text) => {
 window.onNativeLog = (s) => log(s);
 
 // ===== 7. BACKUP =====
-const backupText = () => JSON.stringify({ app: 'Scale Log', saved: new Date().toISOString(), people, settings, readings });
+const backupText = () => JSON.stringify({ app: 'Scale Log', saved: new Date().toISOString(), people, settings, readings, workouts });
 function download(name, text, type) {
   if (native) { native.share(name, type, text); return; }
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name;
@@ -644,6 +708,12 @@ function restore(d) {
   const have = new Set(readings.map(key));
   const add = d.readings.filter((r) => r && r.kg > 0 && r.t).map((r) => Object.assign({}, r, { uid: r.uid && person(r.uid) ? r.uid : people[0].id })).filter((r) => !have.has(key(r)));
   readings = readings.concat(add).sort((a, b) => a.t - b.t);
+  if (Array.isArray(d.workouts)) {
+    const wHave = new Set(workouts.map((x) => x.t + '|' + (x.uid || people[0].id)));
+    const wAdd = d.workouts.filter((x) => x && x.t).map((x) => Object.assign({}, x, { uid: x.uid && person(x.uid) ? x.uid : people[0].id })).filter((x) => !wHave.has(x.t + '|' + x.uid));
+    workouts = workouts.concat(wAdd).sort((a, b) => a.t - b.t);
+    store.set('scale_workouts', workouts);
+  }
   store.set('scale_people', people); store.set('scale_readings', readings);
   return add.length;
 }
@@ -736,6 +806,177 @@ if (!native && navigator.bluetooth) knownDevice().then((d) => { if (d) { hookDev
 // Lets Chrome offer "Install app" and keeps it opening offline. Only over https -- opened as a
 // plain file there is nothing to register against, and that is fine.
 if (!native && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+
+// ===== 9. CARDIO (ERG BRIDGE) =====
+let ergWs = null;
+let ergSnap = null;
+
+function latestWeightKg(uid) {
+  const list = readings.filter((r) => r.uid === uid);
+  return list.length ? list[list.length - 1].kg : null;
+}
+function fmtClock(sec) {
+  const s = Math.floor(sec || 0), m = Math.floor(s / 60), r = s % 60;
+  return String(m).padStart(2, '0') + ':' + String(r).padStart(2, '0');
+}
+function fmtPace500(sec) {
+  if (!sec || sec <= 0 || sec > 600) return '--:--';
+  const m = Math.floor(sec / 60), r = (sec % 60).toFixed(1).padStart(4, '0');
+  return m + ':' + r;
+}
+function ergBaseUrl() {
+  return ($('cUrl').value.trim() || 'http://localhost:8000').replace(/\/+$/, '');
+}
+function setErgButtons(connected) {
+  $('btnErgConn').disabled = connected;
+  $('btnErgDisc').disabled = !connected;
+  $('btnErgStart').disabled = !connected;
+  $('btnErgPause').disabled = !connected;
+  $('btnErgSave').disabled = !connected;
+  $('btnErgReset').disabled = !connected;
+}
+function updateCardioHUD(d) {
+  ergSnap = d;
+  const uid = $('cPerson').value || (people[0] && people[0].id);
+  const kg = latestWeightKg(uid);
+  const w = d.combined.watts || 0;
+  $('cElapsed').textContent = fmtClock(d.elapsed_sec);
+  $('cWatts').textContent = Math.round(w) + ' W';
+  $('cAvgW').textContent = 'Avg ' + Math.round(d.combined.avg_watts || 0) + ' W';
+  $('cWkg').textContent = kg ? (w / kg).toFixed(2) + ' W/kg (' + fmt(kg) + ' ' + settings.unit + ')' : 'No weigh-in yet';
+  $('cCals').textContent = (d.combined.calories || 0).toFixed(1);
+
+  $('cHrDot').className = d.heart_rate && d.heart_rate.connected ? 'cdot on' : 'cdot';
+  $('cHr').textContent = d.heart_rate && d.heart_rate.bpm ? d.heart_rate.bpm + ' bpm' : '—';
+  const avgHr = d.heart_rate && d.heart_rate.avg_bpm ? Math.round(d.heart_rate.avg_bpm) : '—';
+  const maxHr = d.heart_rate && d.heart_rate.max_bpm ? d.heart_rate.max_bpm : '—';
+  $('cHrMeta').textContent = 'Avg ' + avgHr + ' / Max ' + maxHr;
+
+  $('cRDot').className = d.rower.connected ? 'cdot on' : 'cdot';
+  $('cRWatts').textContent = Math.round(d.rower.watts || 0) + ' W';
+  $('cRMeta').textContent = fmtPace500(d.rower.pace_500m_sec) + ' /500m · ' + (d.rower.spm || 0) + ' spm · ' + Math.round(d.rower.meters || 0) + 'm';
+
+  $('cBDot').className = d.bike.connected ? 'cdot on' : 'cdot';
+  $('cBWatts').textContent = Math.round(d.bike.watts || 0) + ' W';
+  $('cBMeta').textContent = (d.bike.rpm || 0).toFixed(0) + ' rpm · ' + (d.bike.calories || 0).toFixed(1) + ' cal';
+
+  const b = $('cBadge');
+  b.textContent = d.paused ? 'PAUSED' : (d.active_machine || 'IDLE');
+  b.className = 'cbadge ' + (d.active_machine || '');
+}
+function renderCardio() {
+  const sel = $('cPerson');
+  const prev = sel.value || viewing || (people[0] && people[0].id);
+  sel.innerHTML = people.map((p) => '<option value="' + p.id + '">' + p.name.replace(/</g, '&lt;') + '</option>').join('');
+  if (people.some((p) => p.id === prev)) sel.value = prev;
+  if (!$('cUrl').value) $('cUrl').value = settings.ergUrl || 'http://localhost:8000';
+
+  const uid = sel.value;
+  const rows = workouts.filter((w) => w.uid === uid).slice().reverse();
+  $('cNone').hidden = rows.length > 0;
+  $('cTbl').innerHTML = rows.length
+    ? '<tr><th>When</th><th>Time</th><th>Cals</th><th>Avg W (W/kg)</th><th>Avg HR</th><th></th></tr>' +
+      rows.map((w) => '<tr><td>' + when(w.t) + '</td><td>' + fmtClock(w.elapsed_sec) + '</td><td>' + (w.combined_cals || 0).toFixed(1) + '</td><td>' + Math.round(w.avg_watts || 0) + (w.w_per_kg ? ' (' + w.w_per_kg.toFixed(2) + ')' : '') + '</td><td>' + (w.avg_hr ? Math.round(w.avg_hr) : '—') + '</td><td><button data-cdel="' + w.t + '" aria-label="Delete">&times;</button></td></tr>').join('')
+    : '';
+}
+function disconnectErg() {
+  if (ergWs) { ergWs.onclose = null; ergWs.close(); ergWs = null; }
+  setErgButtons(false);
+  $('cBadge').textContent = 'OFFLINE';
+  $('cBadge').className = 'cbadge';
+  $('cStatus').textContent = 'Disconnected from Erg Bridge.';
+}
+function connectErg() {
+  disconnectErg();
+  const base = ergBaseUrl();
+  settings.ergUrl = base;
+  store.set('scale_settings', settings);
+  const wsUrl = base.replace(/^http/, 'ws') + '/ws';
+  $('cStatus').textContent = 'Connecting to ' + base + '...';
+  try {
+    ergWs = new WebSocket(wsUrl);
+  } catch (err) {
+    $('cStatus').textContent = 'Could not open WebSocket (' + err.message + ').';
+    return;
+  }
+  ergWs.onopen = () => {
+    setErgButtons(true);
+    $('cStatus').textContent = 'Connected to ' + base;
+  };
+  ergWs.onmessage = (ev) => {
+    try { updateCardioHUD(JSON.parse(ev.data)); } catch (e) { /* ignore malformed frame */ }
+  };
+  ergWs.onerror = () => {
+    $('cStatus').textContent = 'Connection error. Make sure Erg Bridge is running and reachable on your Wi-Fi.';
+  };
+  ergWs.onclose = () => {
+    setErgButtons(false);
+    $('cBadge').textContent = 'OFFLINE';
+    $('cBadge').className = 'cbadge';
+  };
+}
+async function ergCmd(action) {
+  try {
+    const res = await fetch(ergBaseUrl() + '/api/' + action, { method: 'POST' });
+    const data = await res.json();
+    if (data.message) say(data.message);
+    return data;
+  } catch (err) {
+    say('Erg Bridge request failed: ' + err.message, true);
+    return null;
+  }
+}
+$('btnErgConn').onclick = connectErg;
+$('btnErgDisc').onclick = disconnectErg;
+$('btnErgStart').onclick = () => ergCmd('start');
+$('btnErgPause').onclick = () => ergCmd('pause');
+$('btnErgReset').onclick = () => ergCmd('reset');
+$('btnErgSave').onclick = async () => {
+  const saved = await ergCmd('save');
+  if (!ergSnap || !(ergSnap.elapsed_sec > 0)) { say('Start a workout first before saving.', true); return; }
+  const uid = $('cPerson').value || people[0].id;
+  const kg = latestWeightKg(uid);
+  const avgW = ergSnap.combined.avg_watts || 0;
+  reload();   // another open copy may have saved since this one did
+  workouts.push({
+    t: Date.now(),
+    uid,
+    elapsed_sec: ergSnap.elapsed_sec,
+    combined_cals: ergSnap.combined.calories || 0,
+    avg_watts: avgW,
+    w_per_kg: kg && avgW > 0 ? +(avgW / kg).toFixed(2) : null,
+    weight_kg: kg,
+    avg_hr: ergSnap.heart_rate ? ergSnap.heart_rate.avg_bpm : null,
+    max_hr: ergSnap.heart_rate ? ergSnap.heart_rate.max_bpm : null,
+    rower_meters: ergSnap.rower.meters || 0,
+    rower_cals: ergSnap.rower.calories || 0,
+    bike_cals: ergSnap.bike.calories || 0,
+  });
+  store.set('scale_workouts', workouts);
+  renderCardio();
+  say(saved ? 'Saved workout to Scale Log and Erg Bridge CSV.' : 'Saved workout to Scale Log only. Erg Bridge did not confirm the CSV.', !saved);
+};
+$('cPerson').onchange = () => { renderCardio(); if (ergSnap) updateCardioHUD(ergSnap); };
+$('cTbl').onclick = (e) => {
+  const del = e.target.dataset.cdel;
+  if (!del) return;
+  if (confirm('Delete this cardio workout?')) {
+    reload();
+    workouts = workouts.filter((w) => String(w.t) !== del);
+    store.set('scale_workouts', workouts);
+    renderCardio();
+  }
+};
+$('btnCardioCsv').onclick = () => download(
+  'cardio_history.csv',
+  'time,person,elapsed_sec,combined_cals,avg_watts,w_per_kg,weight_kg,avg_hr_bpm,max_hr_bpm,rower_meters,rower_cals,bike_cals\n' +
+  workouts.map((w) => {
+    const p = person(w.uid);
+    return [new Date(w.t).toISOString(), p ? '"' + p.name.replace(/"/g, '""') + '"' : '', w.elapsed_sec, w.combined_cals, w.avg_watts, w.w_per_kg || '', w.weight_kg || '', w.avg_hr || '', w.max_hr || '', w.rower_meters, w.rower_cals, w.bike_cals].join(',');
+  }).join('\n'),
+  'text/csv'
+);
+renderCardio();
 </script>
 </body>
 </html>
